@@ -36,6 +36,7 @@
   (setq all-the-icons-for-buffer t)
   (use-package all-the-icons-dired
     :ensure t
+    :diminish all-the-icons-dired-mode
     :init
     (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)))
 
@@ -55,6 +56,11 @@
 (setq column-number-mode t)
 (global-hl-line-mode 1)
 (setq sentence-end-double-space nil)
+(setq default-fill-column 80)
+
+;; backups
+(setq backup-directory-alist `(("." . "~/.emacs.d/backups")) )
+(setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save-list/" t)) )
 
 ;; winner mode
 (winner-mode 1)
@@ -66,6 +72,21 @@
 (setq-default indent-tabs-mode nil)
 
 (require 'tramp)
+
+;; ==============================
+;; dired
+;; ==============================
+
+;; allow dired to be able to delete or copy a whole dir.
+(setq dired-recursive-copies (quote always)) ; “always” means no asking
+(setq dired-recursive-deletes (quote top)) ; “top” means ask once
+(setq dired-dwim-target t)
+; dired-details
+(use-package dired-details
+  :ensure t
+  :config
+  (dired-details-install)
+  (setq dired-details-hidden-string ""))
 
 ;; ==============================
 ;; UI Config
@@ -80,19 +101,29 @@
   (which-key-setup-side-window-right-bottom)
   (setq which-key-sort-order 'which-key-key-order-alpha
         which-key-side-window-max-width 0.33
-        which-key-idle-delay 0.5))
+        which-key-idle-delay 0.75))
+
+(use-package avy
+  :ensure t
+  :bind (("C-'" . avy-goto-char-2)))
 
 (use-package ivy
   :ensure t
   :diminish (ivy-mode . "") ; does not display ivy in the modeline
   :init (ivy-mode 1)        ; enable ivy globally at startup
   :bind (:map ivy-mode-map  ; bind in the ivy buffer
-         ("C-'" . ivy-avy)) ; C-' to ivy-avy
-  :config
+              ("C-;" . ivy-avy)
+              ("C-j" . ivy-next-line)
+              ("C-k" . ivy-previous-line)
+              )
+
   (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks and …
   (setq ivy-height 20)               ; set height of the ivy window
   (setq ivy-count-format "(%d/%d) ") ; count format, from the ivy help page
   )
+
+(use-package counsel
+  :ensure t)
 
 (use-package evil
   :ensure t
@@ -101,6 +132,12 @@
 
 (use-package magit
   :ensure t)
+
+(use-package undo-tree
+  :ensure t
+  :diminish undo-tree-mode
+  :init
+  (global-undo-tree-mode))
 
 (use-package general
   :ensure t
@@ -111,13 +148,41 @@
    :prefix "SPC"
    :non-normal-prefix "C-SPC"
 
-   "TAB" '(switch-to-other-buffer :which-key "prev-buffer")
+   "SPC" '(counsel-M-x :which-key "M-x")
+
+   "h" '(:ignore t :which-key "help")
+   "ha" 'apropos-command
+   "hd" 'apropos-documentation
+   "hi" 'info
+   "hk" 'describe-key
+   "hf" 'describe-function
+   "hv" 'describe-variable
+   "hb" 'describe-bindings
+   "hm" 'describe-mode
+   "hP" 'describe-package
+   "hr" 'info-emacs-manual
+   "hs" 'describe-syntax
+
    "b" '(:ignore t :which-key "buffers")
-   "bb" 'switch-to-buffer
+   "bb" 'ivy-switch-buffer
+   "ss" 'save-buffer
+   "bo" 'ivy-switch-buffer-other-window
+
    "f" '(:ignore t :which-key "files")
-   "ff" 'ido-find-file
+   "ff" 'counsel-find-file
+   "fo" 'find-file-other-window
+   "fl" 'counsel-find-library
+
    "d" '(:ignore t :which-key "directories")
    "dd" 'ido-dired
+
    "g" '(:ignore t :which-key "git")
    "gs" 'magit-status
+   "gg" 'counsel-git-grep
    ))
+
+;; ==============================
+;; auto-generated config
+;; ==============================
+
+(put 'dired-find-alternate-file 'disabled nil)
