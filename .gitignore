@@ -1,0 +1,7 @@
+# Ignore everything in .emacs.d
+*
+
+# But not init.el and custom/
+!init.el
+!custom/
+!.gitignore
