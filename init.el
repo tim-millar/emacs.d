@@ -12,9 +12,9 @@
 (setq package-enable-at-startup nil)
 
 (setq package-archives '(("org"       . "http://orgmode.org/elpa/")
-                         ("gnu"       . "http://elpa.gnu.org/packages/")
-                         ("melpa"     . "https://melpa.org/packages/")
-                         ("marmalade" . "http://marmalade-repo.org/packages/")))
+			 ("gnu"       . "http://elpa.gnu.org/packages/")
+			 ("melpa"     . "https://melpa.org/packages/")
+			 ("marmalade" . "http://marmalade-repo.org/packages/")))
 (package-initialize)
 
 ;; Bootstrap `use-package'
@@ -86,7 +86,11 @@
 ;; set up some shortcuts to dotfiles & orgfiles
 (set-register ?e (cons 'file "~/.emacs.d/init.el"))
 
-(require 'tramp)
+(use-package diminish
+  :config
+  (diminish 'auto-revert-mode))
+
+(use-package tramp)
 
 (use-package undo-tree
   :diminish undo-tree-mode
@@ -101,7 +105,8 @@
 (setq dired-recursive-copies (quote always)) ; “always” means no asking
 (setq dired-recursive-deletes (quote top)) ; “top” means ask once
 (setq dired-dwim-target t)
-; dired-detailsauto-save
+
+; dired-details
 (use-package dired-details
   :ensure t
   :config
@@ -120,25 +125,28 @@
   :config
   (which-key-setup-side-window-right-bottom)
   (setq which-key-sort-order 'which-key-key-order-alpha
-        which-key-side-window-max-width 0.33
-        which-key-idle-delay 0.75))
+	which-key-side-window-max-width 0.33
+	which-key-idle-delay 0.75))
 
 (use-package avy
   :ensure t
-  :bind (("C-'" . avy-goto-char-2)))
+  :bind (("C-'" . avy-goto-char-2))
+  :config
+  (avy-setup-default))
 
 (use-package ivy
   :ensure t
-  :diminish (ivy-mode . "") ; does not display ivy in the modeline
-  :init (ivy-mode 1)        ; enable ivy globally at startup
-  :bind (:map ivy-mode-map  ; bind in the ivy buffer
-              ("C-;" . ivy-avy)
-              ("C-j" . ivy-next-line)
-              ("C-k" . ivy-previous-line)
-              )
+  :diminish (ivy-mode . "")
+  :init (ivy-mode 1)
+  :bind (:map ivy-mode-map
+	      ("C-;" . ivy-avy)
+	      ("C-j" . ivy-next-line)
+	      ("C-k" . ivy-previous-line)
+	      )
   :config
-  (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks and …
-  (setq ivy-height 20)               ; set height of the ivy window
+  (setq enable-recursive-minibuffers t)
+  (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks
+  (setq ivy-height 15)               ; set height of the ivy window
   (setq ivy-count-format "(%d/%d) ") ; count format, from the ivy help page
   )
 
@@ -146,11 +154,15 @@
   :ensure t)
 
 (use-package counsel
-  :ensure t)
+  :ensure t
+  :bind (:map read-expression-map
+	      ("C-r" . counsel-expression-history)))
 
 (use-package projectile
   :ensure t
   :config
+  (setq projectile-completion-system 'ivy)
+  (setq projectile-mode-line '(:eval (format " [%s]" (projectile-project-name))))
   (projectile-mode)
   (use-package counsel-projectile
     :ensure t
@@ -164,6 +176,7 @@
 
 (use-package smartparens
   :ensure t
+  :diminish smartparens-mode
   :config
   (smartparens-global-mode t)
   (use-package smartparens-config)
@@ -175,6 +188,9 @@
   (evil-mode 1))
 
 (use-package magit
+  :ensure t)
+
+(use-package git-timemachine
   :ensure t)
 
 (use-package general
@@ -197,7 +213,7 @@
    "hv" 'counsel-describe-variable
    "hb" 'describe-bindings
    "hm" 'describe-mode
-   "hP" 'describe-package
+   "hp" 'describe-package
    "hr" 'info-emacs-manual
    "hs" 'describe-syntax
    "hl" 'counsel-find-library
@@ -207,10 +223,12 @@
    "ss" 'save-buffer
    "bo" 'ivy-switch-buffer-other-window
    "bi" 'ibuffer
+   "bs" 'swiper
 
    "f"  '(:ignore t :which-key "files")
    "ff" 'counsel-find-file
    "fo" 'find-file-other-window
+   "fr" 'counsel-recentf
 
    "d"  '(:ignore t :which-key "directories")
    "dd" 'ido-dired
@@ -220,20 +238,30 @@
    "gs" 'magit-status
    "gg" 'counsel-git-grep
    "gf" 'counsel-git
+   "gt" 'git-timemachine-toggle
 
-   "p"   '(:ignore t :which-key "projectile")
-   "pb"  '(counsel-projectile-switch-to-buffer :which-key "switch-buffer")
-   "pd"  '(counsel-projectile-find-dir :which-key "find-dir")
-   "pD"  '(projectile-dired :which-key "dired")
-   "pI"  '(projectile-ibuffer :which-key "iBuffer")
-   "pf"  '(counsel-projectile-find-file :which-key "find-file")
-   "pp"  '(counsel-projectile-switch-project :which-key "switch-project")
-   "pss" '(counsel-projectile-ag :which-key "ag")
+   "c" '(:ignore t :which-key "counsel")
+   "cs" '(swiper :which-key "swiper")
+   "cd" '(counsel-dpkg :which-key "dpkg")
+   "ci" '(counsel-imenu :which-key "imenu")
+   "cl" '(counsel-locate :which-key "locate")
+   "ct" '(counsel-load-theme :which-key "themes")
+   "cx" '(counsel-linux-app :which-key "linux-apps")
+   "cy" '(counsel-yank-pop :which-key "yank-pop")
+
+   "p"  '(:ignore t :which-key "projectile")
+   "pb" '(counsel-projectile-switch-to-buffer :which-key "switch-buffer")
+   "pd" '(counsel-projectile-find-dir :which-key "find-dir")
+   "pD" '(projectile-dired :which-key "dired")
+   "pi" '(projectile-ibuffer :which-key "iBuffer")
+   "pf" '(counsel-projectile-find-file :which-key "find-file")
+   "pp" '(counsel-projectile-switch-project :which-key "switch-project")
+   "ps" '(counsel-projectile-ag :which-key "ag")
 
    "r"  '(:ignore t :which-key "rails")
    "r!" '(:ignore t :which-key "run")
 
-   "rg" '(:ignore t :which-key "goto")
+   "rg"  '(:ignore t :which-key "goto")
    "rgd" '(projectile-rails-goto-schema :which-key "goto-schema")
    "rgf" '(projectile-rails-goto-file-at-point :which-key "goto-file-at-point")
    "rgg" '(projectile-rails-goto-gemfile :which-key "goto-gemfile")
@@ -258,12 +286,12 @@
 
 (use-package ruby-mode
   :ensure t
-  :diminish ruby-mode
   ; :mode
   ; (("\\.rb\\" . ruby-mode) ("\\.ru\\" . ruby-mode)
   ;  ("\\.rake\\" . ruby-mode) ("Gemfile" . ruby-mode))
   :config
   (use-package inf-ruby
+    :defer t
     :ensure t))
 
 (use-package web-mode
@@ -285,6 +313,7 @@
 
 (use-package erlang
   :ensure t
+  :defer t
   :diminish (erlang-mode . "")
   :config
   (use-package erlang-start))
