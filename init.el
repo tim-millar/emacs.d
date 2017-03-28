@@ -2,6 +2,11 @@
 ;; Configure setup
 ;; ==============================
 
+;; Start emacs as a server
+(load "server")
+(unless (server-running-p)
+  (server-start))
+
 (require 'package)
 
 (setq package-enable-at-startup nil)
@@ -24,9 +29,11 @@
 ;; ==============================
 
 ;; creamsody theme
-(use-package creamsody-theme :ensure t :defer t)
-(load-theme 'creamsody t)
-(creamsody-modeline)
+(use-package creamsody-theme
+  :ensure t
+  :config
+  (load-theme 'creamsody t)
+  (creamsody-modeline))
 
 ;; load source code pro font
 (set-frame-font "Source Code Pro 11")
@@ -60,8 +67,9 @@
 (global-hl-line-mode 1)
 (setq sentence-end-double-space nil)
 (setq default-fill-column 80)
+(setq default-indent-tabs-mode nil)
 
-;; Backups
+;; Backup
 (setq backup-directory-alist
       '(("." . "~/.emacs.d/backups")))
 (setq auto-save-file-name-transforms
@@ -75,13 +83,12 @@
 (windmove-default-keybindings)
 (setq windmove-wrap-around t)
 
-;; no tabs
-(setq default-indent-tabs-mode nil)
+;; set up some shortcuts to dotfiles & orgfiles
+(set-register ?e (cons 'file "~/.emacs.d/init.el"))
 
 (require 'tramp)
 
 (use-package undo-tree
-  :ensure t
   :diminish undo-tree-mode
   :config
   (global-undo-tree-mode))
@@ -135,12 +142,16 @@
   (setq ivy-count-format "(%d/%d) ") ; count format, from the ivy help page
   )
 
+(use-package swiper
+  :ensure t)
+
 (use-package counsel
   :ensure t)
 
 (use-package projectile
   :ensure t
   :config
+  (projectile-mode)
   (use-package counsel-projectile
     :ensure t
     :config
@@ -149,9 +160,14 @@
     :ensure t
     :diminish projectile-rails-mode
     :config
-    (projectile-rails-global-mode))
+    (projectile-rails-global-mode)))
 
-  (projectile-mode))
+(use-package smartparens
+  :ensure t
+  :config
+  (smartparens-global-mode t)
+  (use-package smartparens-config)
+  (use-package smartparens-ruby))
 
 (use-package evil
   :ensure t
@@ -240,6 +256,16 @@
 ;; Language Support
 ;; ==============================
 
+(use-package ruby-mode
+  :ensure t
+  :diminish ruby-mode
+  ; :mode
+  ; (("\\.rb\\" . ruby-mode) ("\\.ru\\" . ruby-mode)
+  ;  ("\\.rake\\" . ruby-mode) ("Gemfile" . ruby-mode))
+  :config
+  (use-package inf-ruby
+    :ensure t))
+
 (use-package web-mode
   :ensure t)
 
@@ -251,14 +277,34 @@
 (use-package yaml-mode
   :ensure t)
 
-(use-package rpsec-mode
+(use-package rspec-mode
   :ensure t)
 
 (use-package bundler
   :ensure t)
+
+(use-package erlang
+  :ensure t
+  :diminish (erlang-mode . "")
+  :config
+  (use-package erlang-start))
 
 ;; ==============================
 ;; auto-generated config
 ;; ==============================
 
 (put 'dired-find-alternate-file 'disabled nil)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
