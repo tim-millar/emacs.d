@@ -85,10 +85,7 @@
 
 ;; set up some shortcuts to dotfiles & orgfiles
 (set-register ?e (cons 'file "~/.emacs.d/init.el"))
-
-(use-package diminish
-  :config
-  (diminish 'auto-revert-mode))
+(set-register ?z (cons 'file "~/.zshrc"))
 
 (use-package tramp)
 
@@ -142,6 +139,8 @@
 	      ("C-;" . ivy-avy)
 	      ("C-j" . ivy-next-line)
 	      ("C-k" . ivy-previous-line)
+	      ("M-j" . ivy-next-history-element)
+	      ("M-k" . ivy-previous-history-element)
 	      )
   :config
   (setq enable-recursive-minibuffers t)
@@ -156,7 +155,11 @@
 (use-package counsel
   :ensure t
   :bind (:map read-expression-map
-	      ("C-r" . counsel-expression-history)))
+	      ("C-r" . counsel-expression-history))
+  :config
+  (use-package counsel-gtags
+    :ensure t
+    :defer t))
 
 (use-package projectile
   :ensure t
@@ -203,6 +206,8 @@
    :non-normal-prefix "C-SPC"
 
    "SPC" '(counsel-M-x :which-key "M-x")
+   "TAB" '(previous-buffer :which-key "previous-buffer")
+   "." '(counsel-gtags-find-symbol :which-key "find-symbol")
 
    "h"  '(:ignore t :which-key "help")
    "ha" 'apropos-command
@@ -224,6 +229,10 @@
    "bo" 'ivy-switch-buffer-other-window
    "bi" 'ibuffer
    "bs" 'swiper
+   "bk" 'kill-this-buffer
+   "bK" 'kill-buffer
+   "b-" 'split-window-vertically
+   "b/" 'split-window-horizontally
 
    "f"  '(:ignore t :which-key "files")
    "ff" 'counsel-find-file
@@ -240,7 +249,7 @@
    "gf" 'counsel-git
    "gt" 'git-timemachine-toggle
 
-   "c" '(:ignore t :which-key "counsel")
+   "c"  '(:ignore t :which-key "counsel")
    "cs" '(swiper :which-key "swiper")
    "cd" '(counsel-dpkg :which-key "dpkg")
    "ci" '(counsel-imenu :which-key "imenu")
@@ -251,12 +260,14 @@
 
    "p"  '(:ignore t :which-key "projectile")
    "pb" '(counsel-projectile-switch-to-buffer :which-key "switch-buffer")
+   "pB" '(projectile-switch-to-buffer-other-window :which-key "switch-buffer other-window")
    "pd" '(counsel-projectile-find-dir :which-key "find-dir")
    "pD" '(projectile-dired :which-key "dired")
    "pi" '(projectile-ibuffer :which-key "iBuffer")
    "pf" '(counsel-projectile-find-file :which-key "find-file")
    "pp" '(counsel-projectile-switch-project :which-key "switch-project")
    "ps" '(counsel-projectile-ag :which-key "ag")
+   "pk" '(projectile-kill-buffers :which-key "kill-buffers")
 
    "r"  '(:ignore t :which-key "rails")
    "r!" '(:ignore t :which-key "run")
@@ -291,8 +302,8 @@
   ;  ("\\.rake\\" . ruby-mode) ("Gemfile" . ruby-mode))
   :config
   (use-package inf-ruby
-    :defer t
-    :ensure t))
+    :ensure t
+    :defer t))
 
 (use-package web-mode
   :ensure t)
@@ -306,17 +317,41 @@
   :ensure t)
 
 (use-package rspec-mode
-  :ensure t)
+  :ensure t
+  :diminish rspec-mode)
 
 (use-package bundler
+  :ensure t)
+
+(use-package feature-mode
   :ensure t)
 
 (use-package erlang
   :ensure t
   :defer t
-  :diminish (erlang-mode . "")
   :config
   (use-package erlang-start))
+
+(use-package anaconda-mode
+  :ensure t
+  :defer t
+  :diminish anaconda-mode
+  :init
+  (setq python-shell-interpreter "/home/timmillar/anaconda2/bin/ipython"
+	python-shell-interpreter-args "--simple-prompt -i")
+  :config
+  (add-hook 'python-mode-hook 'anaconda-mode)
+  (add-hook 'python-mode-hook 'anaconda-eldoc-mode))
+
+;; ==============================
+;; Tidy-up modeline
+;; ==============================
+
+(use-package diminish
+  :config
+  (diminish 'auto-revert-mode)
+  (diminish 'eldoc-mode)
+  (diminish 'compilation-shell-minor-mode))
 
 ;; ==============================
 ;; auto-generated config
