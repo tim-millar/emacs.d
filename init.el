@@ -1,4 +1,4 @@
-;; ==============================
+; ==============================
 ;; Configure setup
 ;; ==============================
 
@@ -23,6 +23,7 @@
   (package-install 'use-package)) ; and install the most recent version of use-package
 
 (require 'use-package)
+(require 'json)
 
 ;; ==============================
 ;; Basic config
@@ -86,6 +87,30 @@
 ;; set up some shortcuts to dotfiles & orgfiles
 (set-register ?e (cons 'file "~/.emacs.d/init.el"))
 (set-register ?z (cons 'file "~/.zshrc"))
+(set-register ?l (cons 'file "~/Org/logs.org"))
+
+;; handle ansi escape seqs in log files
+(use-package ansi-color
+  :config
+  (defun display-ansi-colors ()
+    (interactive)
+    (let ((inhibit-read-only t))
+      (ansi-color-apply-on-region (point-min) (point-max))))
+  (add-to-list 'auto-mode-alist '("\\.log\\'" . display-ansi-colors)))
+
+(add-to-list 'auto-mode-alist '("\\.log\\'" . auto-revert-tail-mode))
+
+(use-package eshell
+  :init
+  (setenv "PAGER" "cat")
+  (setq eshell-visual-commands
+	'("less" "tmux" "htop" "top" "bash" "zsh"
+	  "fish" "ssh" "tail" "vi" "more")))
+
+(use-package eshell-git-prompt
+  :ensure t
+  :config
+  (eshell-git-prompt-use-theme 'powerline))
 
 (use-package tramp)
 
@@ -175,7 +200,46 @@
     :ensure t
     :diminish projectile-rails-mode
     :config
-    (projectile-rails-global-mode)))
+    (projectile-rails-global-mode)
+    (general-define-key
+     :states '(normal visual insert emacs)
+     :keymaps 'projectile-rails-mode-map ;; ???
+     :prefix "SPC r"
+     :non-normal-prefix "C-SPC r"
+     "r"  '(:ignore t :which-key "rails")
+     "r!" '(:ignore t :which-key "run")
+
+     "rg"  '(:ignore t :which-key "goto")
+     "gd" '(projectile-rails-goto-schema :which-key "goto-schema")
+     "gf" '(projectile-rails-goto-file-at-point :which-key "goto-file-at-point")
+     "gg" '(projectile-rails-goto-gemfile :which-key "goto-gemfile")
+     "gh" '(projectile-rails-goto-spec-helper :which-key "goto-spec-helper")
+     "gr" '(projectile-rails-goto-routes :which-key "goto-routes")
+     "gs" '(projectile-rails-goto-seeds :which-key "goto-seed")
+
+     "c" '(projectile-rails-find-controller :which-key "find-controller")
+     "C" '(projectile-rails-find-current-controller :which-key "find-current-controller")
+     "m" '(projectile-rails-find-model :which-key "find-model")
+     "M" '(projectile-rails-find-current-model :which-key "find-current-model")
+     "p" '(projectile-rails-find-spec :which-key "find-spec")
+     "P" '(projectile-rails-find-current-spec :which-key "find-current-spec")
+     "r" '(projectile-rails-console :which-key "console")
+     "R" '(projectile-rails-server :which-key "server")
+     "v" '(projectile-rails-find-view :which-key "find-view")
+     "V" '(projectile-rails-find-current-view :which-key "find-current-view")
+     )
+    ))
+
+(use-package evil
+  :ensure t
+  :config
+  (setq evil-disable-insert-state-bindings t)
+  (evil-mode 1)
+  (use-package evil-escape
+    :ensure t
+    :diminish evil-escape-mode
+    :config
+    (evil-escape-mode 1)))
 
 (use-package smartparens
   :ensure t
@@ -183,18 +247,35 @@
   :config
   (smartparens-global-mode t)
   (use-package smartparens-config)
-  (use-package smartparens-ruby))
-
-(use-package evil
-  :ensure t
-  :config
-  (evil-mode 1))
+  (use-package smartparens-ruby
+    :defer t)
+  (use-package evil-smartparens
+    :diminish evil-smartparens-mode
+    :config
+    (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode)))
 
 (use-package magit
-  :ensure t)
+  :ensure t
+  :config
+  (use-package evil-magit
+    :ensure t
+    :config
+    (setq evil-magit-state 'normal)))
 
 (use-package git-timemachine
-  :ensure t)
+  :ensure t
+  :defer t
+  :config
+  (evil-make-overriding-map git-timemachine-mode-map 'normal)
+  (add-hook 'git-timemachine-mode-hook #'evil-normalize-keymaps))
+
+(use-package mo-git-blame
+  :ensure t
+  :defer t
+  :config
+  (setq mo-git-blame-use-magit 'always)
+  (evil-make-overriding-map mo-git-blame-mode-map 'normal)
+  (add-hook 'mo-git-blame-mode-hook #'evil-normalize-keymaps))
 
 (use-package general
   :ensure t
@@ -206,7 +287,8 @@
    :non-normal-prefix "C-SPC"
 
    "SPC" '(counsel-M-x :which-key "M-x")
-   "TAB" '(previous-buffer :which-key "previous-buffer")
+   "TAB" '(next-buffer :which-key "next-buffer")
+   "DEL" '(previous-buffer :which-key "previous-buffer")
    "." '(counsel-gtags-find-symbol :which-key "find-symbol")
 
    "h"  '(:ignore t :which-key "help")
@@ -225,8 +307,8 @@
 
    "b"  '(:ignore t :which-key "buffers")
    "bb" 'ivy-switch-buffer
+   "bB" 'ivy-switch-buffer-other-window
    "ss" 'save-buffer
-   "bo" 'ivy-switch-buffer-other-window
    "bi" 'ibuffer
    "bs" 'swiper
    "bk" 'kill-this-buffer
@@ -236,7 +318,7 @@
 
    "f"  '(:ignore t :which-key "files")
    "ff" 'counsel-find-file
-   "fo" 'find-file-other-window
+   "fF" 'find-file-other-window
    "fr" 'counsel-recentf
 
    "d"  '(:ignore t :which-key "directories")
@@ -248,6 +330,7 @@
    "gg" 'counsel-git-grep
    "gf" 'counsel-git
    "gt" 'git-timemachine-toggle
+   "gb" 'mo-git-blame-current
 
    "c"  '(:ignore t :which-key "counsel")
    "cs" '(swiper :which-key "swiper")
@@ -263,33 +346,28 @@
    "pB" '(projectile-switch-to-buffer-other-window :which-key "switch-buffer other-window")
    "pd" '(counsel-projectile-find-dir :which-key "find-dir")
    "pD" '(projectile-dired :which-key "dired")
+   "pe" '(projectile-recentf :which-key "recentf")
    "pi" '(projectile-ibuffer :which-key "iBuffer")
-   "pf" '(counsel-projectile-find-file :which-key "find-file")
-   "pp" '(counsel-projectile-switch-project :which-key "switch-project")
+   "pj" '(projectile-find-tag :which-key "find-tag")
+   "po" '(projectile-multi-occur :which-key "multi-occur")
+   "pp" '(counsel-projectile-find-file :which-key "find-file")
+   "pf" '(counsel-projectile-switch-project :which-key "switch-project")
    "ps" '(counsel-projectile-ag :which-key "ag")
+   "pS" '(projectile-save-project-buffers :which-key "save-buffers")
    "pk" '(projectile-kill-buffers :which-key "kill-buffers")
 
-   "r"  '(:ignore t :which-key "rails")
-   "r!" '(:ignore t :which-key "run")
+   "n" '(:ignore t :which-key "bundler-and-rvm")
+   "na" 'rvm-activate-corresponding-ruby
+   "nd" 'bundle-update
+   "ne" 'bundle-exec
+   "ni" 'bundle-install
+   "no" 'bundle-open
+   "nr" 'bundle-console
+   "ns" 'bundle-show
+   "nu" 'rvm-use
+   )
 
-   "rg"  '(:ignore t :which-key "goto")
-   "rgd" '(projectile-rails-goto-schema :which-key "goto-schema")
-   "rgf" '(projectile-rails-goto-file-at-point :which-key "goto-file-at-point")
-   "rgg" '(projectile-rails-goto-gemfile :which-key "goto-gemfile")
-   "rgh" '(projectile-rails-goto-spec-helper :which-key "goto-spec-helper")
-   "rgr" '(projectile-rails-goto-routes :which-key "goto-routes")
-   "rgs" '(projectile-rails-goto-seeds :which-key "goto-seed")
-
-   "rc" '(projectile-rails-find-controller :which-key "find-controller")
-   "rC" '(projectile-rails-find-current-controller :which-key "find-current-controller")
-   "rm" '(projectile-rails-find-model :which-key "find-model")
-   "rM" '(projectile-rails-find-current-model :which-key "find-current-model")
-   "rp" '(projectile-rails-find-spec :which-key "find-spec")
-   "rP" '(projectile-rails-find-current-spec :which-key "find-current-spec")
-   "rr" '(projectile-rails-console :which-key "console")
-   "rv" '(projectile-rails-find-view :which-key "find-view")
-   "rV" '(projectile-rails-find-current-view :which-key "find-current-view")
-   ))
+)
 
 ;; ==============================
 ;; Language Support
@@ -306,7 +384,9 @@
     :defer t))
 
 (use-package web-mode
-  :ensure t)
+  :ensure t
+  :defer t
+  :mode "\\.erb\\'")
 
 (use-package rvm
   :ensure t
@@ -314,11 +394,29 @@
   (rvm-use-default))
 
 (use-package yaml-mode
-  :ensure t)
+  :ensure t
+  :defer t)
 
 (use-package rspec-mode
   :ensure t
-  :diminish rspec-mode)
+  :diminish rspec-mode
+  :config
+  (add-hook 'dired-mode-hook 'rspec-dired-mode)
+  (general-define-key
+   :states '(normal visual insert emacs)
+   :keymaps 'rspec-verifiable-mode-map
+   :prefix "SPC ,"
+   :non-normal-prefix "C-SPC ,"
+   "a" 'rspec-verify-all
+   "f" 'rspec-run-last-failed
+   "v" 'rspec-verify)
+  (general-define-key
+   :states '(normal visual emacs)
+   :keymaps 'rspec-dired-mode-map
+   :prefix "SPC ,"
+   :non-normal-prefix "C-SPC ,"
+   "a" 'rspec-verify-all
+   "f" 'rspec-run-last-failed))
 
 (use-package bundler
   :ensure t)
@@ -340,8 +438,8 @@
   (setq python-shell-interpreter "/home/timmillar/anaconda2/bin/ipython"
 	python-shell-interpreter-args "--simple-prompt -i")
   :config
-  (add-hook 'python-mode-hook 'anaconda-mode)
-  (add-hook 'python-mode-hook 'anaconda-eldoc-mode))
+  (add-hook 'python-hook 'anaconda-mode)
+  (add-hook 'python-hook 'anaconda-eldoc-mode))
 
 ;; ==============================
 ;; Tidy-up modeline
