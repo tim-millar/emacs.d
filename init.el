@@ -44,12 +44,14 @@
   :ensure t
   :config
   (setq all-the-icons-color-icons t)
-  (setq all-the-icons-for-buffer t)
-  (use-package all-the-icons-dired
+  (setq all-the-icons-for-buffer t))
+
+(use-package all-the-icons-dired
     :ensure t
     :diminish all-the-icons-dired-mode
+    :after all-the-icons
     :init
-    (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)))
+    (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
 
 ;; switch off splash
 (setq inhibit-splash-screen t)
@@ -105,7 +107,9 @@
   (setenv "PAGER" "cat")
   (setq eshell-visual-commands
 	'("less" "tmux" "htop" "top" "bash" "zsh"
-	  "fish" "ssh" "tail" "vi" "more")))
+	  "fish" "ssh" "tail" "vi" "more"))
+  (setq eshell-visual-subcommands
+	'("git" ("log" "diff" "show"))))
 
 (use-package eshell-git-prompt
   :ensure t
@@ -160,13 +164,14 @@
   :ensure t
   :diminish (ivy-mode . "")
   :init (ivy-mode 1)
-  :bind (:map ivy-mode-map
-	      ("C-;" . ivy-avy)
-	      ("C-j" . ivy-next-line)
-	      ("C-k" . ivy-previous-line)
-	      ("M-j" . ivy-next-history-element)
-	      ("M-k" . ivy-previous-history-element)
-	      )
+  :bind
+  (:map ivy-mode-map
+	("C-;" . ivy-avy)
+	("C-j" . ivy-next-line)
+	("C-k" . ivy-previous-line)
+	("M-j" . ivy-next-history-element)
+	("M-k" . ivy-previous-history-element)
+	)
   :config
   (setq enable-recursive-minibuffers t)
   (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks
@@ -179,67 +184,49 @@
 
 (use-package counsel
   :ensure t
-  :bind (:map read-expression-map
-	      ("C-r" . counsel-expression-history))
-  :config
-  (use-package counsel-gtags
-    :ensure t
-    :defer t))
+  :bind
+  (:map read-expression-map
+	("C-r" . counsel-expression-history)))
+
+(use-package counsel-gtags
+  :ensure t
+  :after counsel
+  :defer t)
 
 (use-package projectile
   :ensure t
   :config
   (setq projectile-completion-system 'ivy)
   (setq projectile-mode-line '(:eval (format " [%s]" (projectile-project-name))))
-  (projectile-mode)
-  (use-package counsel-projectile
-    :ensure t
-    :config
-    (counsel-projectile-on))
-  (use-package projectile-rails
-    :ensure t
-    :diminish projectile-rails-mode
-    :config
-    (projectile-rails-global-mode)
-    (general-define-key
-     :states '(normal visual insert emacs)
-     :keymaps 'projectile-rails-mode-map ;; ???
-     :prefix "SPC r"
-     :non-normal-prefix "C-SPC r"
-     "r"  '(:ignore t :which-key "rails")
-     "r!" '(:ignore t :which-key "run")
+  (projectile-mode))
 
-     "rg"  '(:ignore t :which-key "goto")
-     "gd" '(projectile-rails-goto-schema :which-key "goto-schema")
-     "gf" '(projectile-rails-goto-file-at-point :which-key "goto-file-at-point")
-     "gg" '(projectile-rails-goto-gemfile :which-key "goto-gemfile")
-     "gh" '(projectile-rails-goto-spec-helper :which-key "goto-spec-helper")
-     "gr" '(projectile-rails-goto-routes :which-key "goto-routes")
-     "gs" '(projectile-rails-goto-seeds :which-key "goto-seed")
+(use-package counsel-projectile
+  :ensure t
+  :after projectile
+  :config
+  (counsel-projectile-on))
 
-     "c" '(projectile-rails-find-controller :which-key "find-controller")
-     "C" '(projectile-rails-find-current-controller :which-key "find-current-controller")
-     "m" '(projectile-rails-find-model :which-key "find-model")
-     "M" '(projectile-rails-find-current-model :which-key "find-current-model")
-     "p" '(projectile-rails-find-spec :which-key "find-spec")
-     "P" '(projectile-rails-find-current-spec :which-key "find-current-spec")
-     "r" '(projectile-rails-console :which-key "console")
-     "R" '(projectile-rails-server :which-key "server")
-     "v" '(projectile-rails-find-view :which-key "find-view")
-     "V" '(projectile-rails-find-current-view :which-key "find-current-view")
-     )
-    ))
+(use-package projectile-rails
+  :ensure t
+  :diminish projectile-rails-mode
+  :after projectile
+  :config
+  (projectile-rails-global-mode))
 
 (use-package evil
   :ensure t
   :config
   (setq evil-disable-insert-state-bindings t)
-  (evil-mode 1)
-  (use-package evil-escape
+  (evil-set-initial-state 'eshell-mode 'emacs)
+  (evil-set-initial-state 'inf-ruby-mode 'emacs)
+  (evil-mode 1))
+
+(use-package evil-escape
     :ensure t
     :diminish evil-escape-mode
+    :after evil
     :config
-    (evil-escape-mode 1)))
+    (evil-escape-mode 1))
 
 (use-package smartparens
   :ensure t
@@ -255,12 +242,13 @@
     (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode)))
 
 (use-package magit
-  :ensure t
-  :config
-  (use-package evil-magit
+  :ensure t)
+
+(use-package evil-magit
     :ensure t
+    :after (evil magit)
     :config
-    (setq evil-magit-state 'normal)))
+    (setq evil-magit-state 'normal))
 
 (use-package git-timemachine
   :ensure t
@@ -365,9 +353,29 @@
    "nr" 'bundle-console
    "ns" 'bundle-show
    "nu" 'rvm-use
-   )
 
-)
+   "r"  '(:ignore t :which-key "rails")
+   "r!" '(:ignore t :which-key "run")
+
+   "rg"  '(:ignore t :which-key "goto")
+   "rgd" '(projectile-rails-goto-schema :which-key "goto-schema")
+   "rgf" '(projectile-rails-goto-file-at-point :which-key "goto-file-at-point")
+   "rgg" '(projectile-rails-goto-gemfile :which-key "goto-gemfile")
+   "rgh" '(projectile-rails-goto-spec-helper :which-key "goto-spec-helper")
+   "rgr" '(projectile-rails-goto-routes :which-key "goto-routes")
+   "rgs" '(projectile-rails-goto-seeds :which-key "goto-seed")
+
+   "rc" '(projectile-rails-find-controller :which-key "find-controller")
+   "rC" '(projectile-rails-find-current-controller :which-key "find-current-controller")
+   "rm" '(projectile-rails-find-model :which-key "find-model")
+   "rM" '(projectile-rails-find-current-model :which-key "find-current-model")
+   "rp" '(projectile-rails-find-spec :which-key "find-spec")
+   "rP" '(projectile-rails-find-current-spec :which-key "find-current-spec")
+   "rr" '(projectile-rails-console :which-key "console")
+   "rR" '(projectile-rails-server :which-key "server")
+   "rv" '(projectile-rails-find-view :which-key "find-view")
+   "rV" '(projectile-rails-find-current-view :which-key "find-current-view")
+   ))
 
 ;; ==============================
 ;; Language Support
@@ -386,7 +394,20 @@
 (use-package web-mode
   :ensure t
   :defer t
-  :mode "\\.erb\\'")
+  :mode
+  (("\\.erb\\'" . web-mode)
+   ("\\.html?\\'" . web-mode))
+  :config
+  (setq web-mode-code-indent-offset 2
+	web-mode-css-indent-offset 2
+	web-mode-enable-css-colorization t
+	web-mode-markup-indent-offset 2
+	web-mode-script-padding 2
+	web-mode-style-padding 2)
+  (general-define-key
+   :states 'normal
+   :keymaps 'web-mode-map
+   "%" 'web-mode-tag-match))
 
 (use-package rvm
   :ensure t
