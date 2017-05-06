@@ -11,10 +11,12 @@
 
 (setq package-enable-at-startup nil)
 
-(setq package-archives '(("org"       . "http://orgmode.org/elpa/")
-			 ("gnu"       . "http://elpa.gnu.org/packages/")
-			 ("melpa"     . "https://melpa.org/packages/")
-			 ("marmalade" . "http://marmalade-repo.org/packages/")))
+(setq package-archives '(("org"          . "http://orgmode.org/elpa/")
+			 ("gnu"          . "http://elpa.gnu.org/packages/")
+			 ("melpa"        . "https://melpa.org/packages/")
+			 ("melpa-stable" . "http://stable.melpa.org/packages/")
+			 ("marmalade"    . "http://marmalade-repo.org/packages/"))
+     package-archive-priorities '(("melpa-stable" . 1)))
 (package-initialize)
 
 ;; Bootstrap `use-package'
@@ -47,11 +49,17 @@
   (setq all-the-icons-for-buffer t))
 
 (use-package all-the-icons-dired
-    :ensure t
-    :diminish all-the-icons-dired-mode
-    :after all-the-icons
-    :init
-    (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
+  :ensure t
+  :diminish all-the-icons-dired-mode
+  :after all-the-icons
+  :init
+  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
+
+(use-package rainbow-delimiters
+  :ensure t
+  :pin melpa-stable
+  :config
+  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 
 ;; switch off splash
 (setq inhibit-splash-screen t)
@@ -71,6 +79,8 @@
 (setq sentence-end-double-space nil)
 (setq default-fill-column 80)
 (setq default-indent-tabs-mode nil)
+(defalias 'list-buffers 'ibuffer)
+(setq-default indent-tabs-mode nil)
 
 ;; Backup
 (setq backup-directory-alist
@@ -85,6 +95,11 @@
 ;; windmove
 (windmove-default-keybindings)
 (setq windmove-wrap-around t)
+
+;; ask before exit
+(add-hook 'kill-emacs-query-functions
+          (lambda () (y-or-n-p "Do you really want to exit Emacs? "))
+          'append)
 
 ;; set up some shortcuts to dotfiles & orgfiles
 (set-register ?e (cons 'file "~/.emacs.d/init.el"))
@@ -101,6 +116,10 @@
   (add-to-list 'auto-mode-alist '("\\.log\\'" . display-ansi-colors)))
 
 (add-to-list 'auto-mode-alist '("\\.log\\'" . auto-revert-tail-mode))
+
+(use-package try
+  :ensure t
+  :defer t)
 
 (use-package eshell
   :init
@@ -120,6 +139,7 @@
 
 (use-package undo-tree
   :diminish undo-tree-mode
+  :defer t
   :config
   (global-undo-tree-mode))
 
@@ -193,6 +213,14 @@
   :after counsel
   :defer t)
 
+(use-package dumb-jump
+  :ensure t
+  :defer t
+  :config
+  (setq dumb-jump-selector 'ivy)
+  (setq dumb-jump-aggressive nil)
+  (dumb-jump-mode))
+
 (use-package projectile
   :ensure t
   :config
@@ -228,12 +256,20 @@
     :config
     (evil-escape-mode 1))
 
+(use-package evil-nerd-commenter
+  :ensure t
+  :after evil
+  :config
+  (evilnc-default-hotkeys))
+
 (use-package smartparens
   :ensure t
   :diminish smartparens-mode
   :config
   (smartparens-global-mode t)
   (use-package smartparens-config)
+  (use-package smartparens-html
+    :defer t)
   (use-package smartparens-ruby
     :defer t)
   (use-package evil-smartparens
@@ -242,13 +278,15 @@
     (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode)))
 
 (use-package magit
-  :ensure t)
+  :ensure t
+  :init
+  (setq magit-refs-local-branch-format "%4c %-25n %h %U%m\n"))
 
 (use-package evil-magit
-    :ensure t
-    :after (evil magit)
-    :config
-    (setq evil-magit-state 'normal))
+  :ensure t
+  :after (evil magit)
+  :config
+  (setq evil-magit-state 'normal))
 
 (use-package git-timemachine
   :ensure t
@@ -278,6 +316,13 @@
    "TAB" '(next-buffer :which-key "next-buffer")
    "DEL" '(previous-buffer :which-key "previous-buffer")
    "." '(counsel-gtags-find-symbol :which-key "find-symbol")
+   "u" '(undo-tree-visualize :which-key "undo tree")
+
+   "j"  '(:ignore t :which-key "dumb jump")
+   "jj" 'dumb-jump-go
+   "jo" 'dumb-jump-go-other-window
+   "jb" 'dumb-jump-back
+   "jq" 'dumb-jump-quick-look
 
    "h"  '(:ignore t :which-key "help")
    "ha" 'apropos-command
@@ -445,9 +490,23 @@
 (use-package feature-mode
   :ensure t)
 
+(use-package markdown-mode
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :commands (markdown-mode gfm-mode)
+  :mode
+  (("README\\.md\\'" . gfm-mode)
+   ("\\.md\\'" . markdown-mode)
+   ("\\.markdown\\'" . markdown-mode))
+  :init
+  (setq markdown-command "multimarkdown"))
+
 (use-package erlang
   :ensure t
   :defer t
+  :init
+  (setq erlang-indent-level 2)
   :config
   (use-package erlang-start))
 
@@ -461,6 +520,16 @@
   :config
   (add-hook 'python-hook 'anaconda-mode)
   (add-hook 'python-hook 'anaconda-eldoc-mode))
+
+(use-package ensime
+  :ensure t
+  :defer t
+  :pin melpa-stable)
+
+(use-package haskell-mode
+  :ensure t
+  :defer t
+  :pin melpa-stable)
 
 ;; ==============================
 ;; Tidy-up modeline
