@@ -1,4 +1,4 @@
-; ==============================
+;; ==============================
 ;; Configure setup
 ;; ==============================
 
@@ -11,7 +11,7 @@
 
 (setq package-enable-at-startup nil)
 
-(setq package-archives '(("org"          . "http://orgmode.org/elpa/")
+(setq package-archives '(("org-elpa"     . "http://orgmode.org/elpa/")
 			 ("gnu"          . "http://elpa.gnu.org/packages/")
 			 ("melpa"        . "https://melpa.org/packages/")
 			 ("melpa-stable" . "http://stable.melpa.org/packages/")
@@ -96,6 +96,9 @@
 (windmove-default-keybindings)
 (setq windmove-wrap-around t)
 
+;; y's and n's everywhere
+(fset 'yes-or-no-p 'y-or-n-p)
+
 ;; ask before exit
 (add-hook 'kill-emacs-query-functions
           (lambda () (y-or-n-p "Do you really want to exit Emacs? "))
@@ -137,11 +140,13 @@
 
 (use-package tramp)
 
-(use-package undo-tree
-  :diminish undo-tree-mode
+(use-package undohist
+  :ensure t
   :defer t
+  :init
+  (customize-set-variable 'udohist-directory "~/.emacs.d/.emacs-undo")
   :config
-  (global-undo-tree-mode))
+  (undohist-initialize))
 
 ;; ==============================
 ;; dired
@@ -421,6 +426,24 @@
    "rv" '(projectile-rails-find-view :which-key "find-view")
    "rV" '(projectile-rails-find-current-view :which-key "find-current-view")
    ))
+
+;; ==============================
+;; org mode
+;; ==============================
+
+(use-package org
+  :pin org-elpa
+  :ensure t
+  :defer t
+  )
+
+(use-package org-bullets
+  :ensure t
+  :defer t
+  :after org
+  :pin melpa-stable
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 
 ;; ==============================
 ;; Language Support
