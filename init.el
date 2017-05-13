@@ -7,14 +7,37 @@
 (unless (server-running-p)
   (server-start))
 
+;; set up tls-signing for emacs packages
+;; taken from "your editor is malware" article
+(require 'cl)
+(setq tls-checktrust t)
+
+(setq python (or (executable-find "py.exe")
+                 (executable-find "python")
+                 ))
+
+(let ((trustfile
+       (replace-regexp-in-string
+        "\\\\" "/"
+        (replace-regexp-in-string
+         "\n" ""
+         (shell-command-to-string (concat python " -m certifi"))))))
+  (setq tls-program
+        (list
+         (format "gnutls-cli%s --x509cafile %s -p %%p %%h"
+                 (if (eq window-system 'w32) ".exe" "") trustfile)))
+  (setq gnutls-verify-error t)
+  (setq gnutls-trustfiles (list trustfile)))
+
+;; Load package and set archives
 (require 'package)
 
 (setq package-enable-at-startup nil)
 
 (setq package-archives '(("org-elpa"     . "http://orgmode.org/elpa/")
-			 ("gnu"          . "http://elpa.gnu.org/packages/")
+			 ("gnu"          . "https://elpa.gnu.org/packages/")
 			 ("melpa"        . "https://melpa.org/packages/")
-			 ("melpa-stable" . "http://stable.melpa.org/packages/")
+			 ("melpa-stable" . "https://stable.melpa.org/packages/")
 			 ("marmalade"    . "http://marmalade-repo.org/packages/"))
      package-archive-priorities '(("melpa-stable" . 1)))
 (package-initialize)
@@ -140,6 +163,11 @@
 
 (use-package tramp)
 
+(use-package undo-tree
+  :ensure t
+  :diminish undo-tree-mode
+  :defer t)
+
 (use-package undohist
   :ensure t
   :defer t
@@ -228,6 +256,7 @@
 
 (use-package projectile
   :ensure t
+  :pin melpa-stable
   :config
   (setq projectile-completion-system 'ivy)
   (setq projectile-mode-line '(:eval (format " [%s]" (projectile-project-name))))
@@ -241,6 +270,7 @@
 
 (use-package projectile-rails
   :ensure t
+  :pin melpa-stable
   :diminish projectile-rails-mode
   :after projectile
   :config
@@ -285,7 +315,14 @@
 (use-package magit
   :ensure t
   :init
-  (setq magit-refs-local-branch-format "%4c %-25n %h %U%m\n"))
+  (setq magit-repository-directories
+        '(("~/Code/otb/" . 1) ("~/moi/" . 2) ("~/.emacs.d" . 0)))
+  (setq magit-refs-local-branch-format "%4c %-25n %h %U%m\n")
+  :config
+  (add-to-list 'magit-repolist-columns
+               '("Unpulled" 25 magit-repolist-column-unpulled-from-upstream nil)  1)
+  (add-to-list 'magit-repolist-columns
+               '("Unpushed" 25 magit-repolist-column-unpushed-to-upstream nil) 1))
 
 (use-package evil-magit
   :ensure t
@@ -552,7 +589,14 @@
 (use-package haskell-mode
   :ensure t
   :defer t
-  :pin melpa-stable)
+  :pin melpa-stable
+  :init
+  (defvar haskell-font-lock-symbols)
+  (setq haskell-font-lock-symbols t)
+  :config
+  (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+  (add-hook 'haskell-mode-hook '(lambda ()
+                                  (setq haskell-indentation-mode t))))
 
 ;; ==============================
 ;; Tidy-up modeline
