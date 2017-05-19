@@ -78,6 +78,13 @@
   :init
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
 
+(use-package all-the-icons-ivy
+  :ensure t
+  :pin melpa-stable
+  :after (all-the-icons ivy counsel)
+  :config
+  (all-the-icons-ivy-setup))
+
 (use-package rainbow-delimiters
   :ensure t
   :pin melpa-stable
@@ -131,6 +138,7 @@
 (set-register ?e (cons 'file "~/.emacs.d/init.el"))
 (set-register ?z (cons 'file "~/.zshrc"))
 (set-register ?l (cons 'file "~/Org/logs.org"))
+(set-register ?g (cons 'file "~/.rvm/gems/ruby-2.3.0/gems"))
 
 ;; handle ansi escape seqs in log files
 (use-package ansi-color
@@ -150,11 +158,15 @@
 (use-package eshell
   :init
   (setenv "PAGER" "cat")
+  (setenv "PATH"
+          (concat
+           "/home/timmillar/.rvm/bin:/home/timmillar/.nvm/versions/node/v4.4.7/bin:/home/timmillar/.local/bin:/home/timmillar/anaconda2/bin:"
+           (getenv "PATH")))
   (setq eshell-visual-commands
-	'("less" "tmux" "htop" "top" "bash" "zsh"
-	  "fish" "ssh" "tail" "vi" "more"))
+        '("less" "tmux" "htop" "top" "bash" "zsh"
+          "fish" "ssh" "tail" "vi" "more"))
   (setq eshell-visual-subcommands
-	'("git" ("log" "diff" "show"))))
+        '("git" ("log" "diff" "show"))))
 
 (use-package eshell-git-prompt
   :ensure t
@@ -176,6 +188,32 @@
   :config
   (undohist-initialize))
 
+(use-package ibuffer-vc
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :init
+  (setq ibuffer-formats
+      '((mark modified read-only vc-status-mini " "
+              (name 18 18 :left :elide)
+              " "
+              (size 9 -1 :right)
+              " "
+              (mode 16 16 :left :elide)
+              " "
+              (vc-status 16 16 :left)
+              " "
+              filename-and-process)))
+  :config
+  (add-hook 'ibuffer-hook
+          (lambda ()
+            (ibuffer-auto-mode 1)
+            (add-to-list 'ibuffer-never-show-predicates "^\\*helm")
+            (add-to-list 'ibuffer-never-show-predicates "^\\*magit")
+            (setq ibuffer-show-empty-filter-groups nil)
+            (ibuffer-vc-set-filter-groups-by-vc-root)
+            (unless (eq ibuffer-sorting-mode 'alphabetic)
+              (ibuffer-do-sort-by-alphabetic)))))
 ;; ==============================
 ;; dired
 ;; ==============================
@@ -191,6 +229,14 @@
   :config
   (dired-details-install)
   (setq dired-details-hidden-string ""))
+
+(use-package docker
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :diminish docker
+  :config
+  (docker-global-mode))
 
 ;; ==============================
 ;; UI Config
@@ -209,6 +255,7 @@
 
 (use-package avy
   :ensure t
+  :pin melpa-stable
   :bind (("C-'" . avy-goto-char-2))
   :config
   (avy-setup-default))
@@ -216,15 +263,15 @@
 (use-package ivy
   :ensure t
   :diminish (ivy-mode . "")
+  :pin melpa-stable
   :init (ivy-mode 1)
   :bind
-  (:map ivy-mode-map
+  (:map ivy-minibuffer-map
 	("C-;" . ivy-avy)
 	("C-j" . ivy-next-line)
 	("C-k" . ivy-previous-line)
 	("M-j" . ivy-next-history-element)
-	("M-k" . ivy-previous-history-element)
-	)
+	("M-k" . ivy-previous-history-element))
   :config
   (setq enable-recursive-minibuffers t)
   (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks
@@ -232,11 +279,24 @@
   (setq ivy-count-format "(%d/%d) ") ; count format, from the ivy help page
   )
 
+(use-package hydra
+  :ensure t
+  :pin melpa-stable
+  :defer t)
+
+(use-package ivy-hydra
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :after (ivy hydra))
+
 (use-package swiper
-  :ensure t)
+  :ensure t
+  :pin melpa-stable)
 
 (use-package counsel
   :ensure t
+  :pin melpa-stable
   :bind
   (:map read-expression-map
 	("C-r" . counsel-expression-history)))
@@ -409,6 +469,8 @@
 
    "c"  '(:ignore t :which-key "counsel")
    "cs" '(swiper :which-key "swiper")
+   "cc" '(ivy-resume :which-key "ivy resume")
+   "ca" '(counsel-ag :which-key "ag")
    "cd" '(counsel-dpkg :which-key "dpkg")
    "ci" '(counsel-imenu :which-key "imenu")
    "cl" '(counsel-locate :which-key "locate")
@@ -491,10 +553,23 @@
   ; :mode
   ; (("\\.rb\\" . ruby-mode) ("\\.ru\\" . ruby-mode)
   ;  ("\\.rake\\" . ruby-mode) ("Gemfile" . ruby-mode))
+  )
+
+(use-package inf-ruby
+  :ensure t
+  :defer t
+  :after ruby-mode)
+
+(use-package robe
+  :ensure t
+  :defer t
+  :after ruby-mode
+  :pin melpa-stable
   :config
-  (use-package inf-ruby
-    :ensure t
-    :defer t))
+  (add-hook 'ruby-mode-hook 'robe-mode)
+  (defadvice inf-ruby-console-auto
+      (before activate-rvm-for-robe activate)
+    (rvm-activate-corresponding-ruby)))
 
 (use-package web-mode
   :ensure t
@@ -548,7 +623,8 @@
   :ensure t)
 
 (use-package feature-mode
-  :ensure t)
+  :ensure t
+  :defer t)
 
 (use-package markdown-mode
   :ensure t
@@ -581,6 +657,16 @@
   (add-hook 'python-hook 'anaconda-mode)
   (add-hook 'python-hook 'anaconda-eldoc-mode))
 
+(use-package virtualenvwrapper
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :init
+  (setq venv-location "~/.tensorflow/")
+  :config
+  (venv-initialize-interactive-shells)
+  (venv-initialize-eshell))
+
 (use-package ensime
   :ensure t
   :defer t
@@ -597,6 +683,13 @@
   (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
   (add-hook 'haskell-mode-hook '(lambda ()
                                   (setq haskell-indentation-mode t))))
+
+(use-package intero
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :config
+  (add-hook 'haskell-mode-hook 'intero-mode))
 
 ;; ==============================
 ;; Tidy-up modeline
