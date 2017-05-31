@@ -50,6 +50,9 @@
 (require 'use-package)
 (require 'json)
 
+;; add custom config files to load path
+(add-to-list 'load-path "~/.emacs.d/custom")
+
 ;; ==============================
 ;; Basic config
 ;; ==============================
@@ -214,6 +217,13 @@
             (ibuffer-vc-set-filter-groups-by-vc-root)
             (unless (eq ibuffer-sorting-mode 'alphabetic)
               (ibuffer-do-sort-by-alphabetic)))))
+
+;; ==============================
+;; Custom packages
+;; ==============================
+
+(use-package setup-utils)
+
 ;; ==============================
 ;; dired
 ;; ==============================
@@ -290,6 +300,15 @@
   :pin melpa-stable
   :after (ivy hydra))
 
+(use-package ace-window
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :bind
+  (("C-x o" . ace-window))
+  :init
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+
 (use-package swiper
   :ensure t
   :pin melpa-stable)
@@ -317,6 +336,8 @@
 (use-package projectile
   :ensure t
   :pin melpa-stable
+  :init
+  (setq projectile-switch-project-action 'projectile-dired)
   :config
   (setq projectile-completion-system 'ivy)
   (setq projectile-mode-line '(:eval (format " [%s]" (projectile-project-name))))
@@ -333,6 +354,9 @@
   :pin melpa-stable
   :diminish projectile-rails-mode
   :after projectile
+  :bind
+  (:map projectile-rails-mode-map
+        ("M-r" . hydra-projectile-rails/body))
   :config
   (projectile-rails-global-mode))
 
@@ -374,6 +398,7 @@
 
 (use-package magit
   :ensure t
+  :pin melpa-stable
   :init
   (setq magit-repository-directories
         '(("~/Code/otb/" . 1) ("~/moi/" . 2) ("~/.emacs.d" . 0)))
@@ -387,6 +412,7 @@
 (use-package evil-magit
   :ensure t
   :after (evil magit)
+  :pin melpa-stable
   :config
   (setq evil-magit-state 'normal))
 
@@ -565,11 +591,13 @@
   :defer t
   :after ruby-mode
   :pin melpa-stable
+  :diminish robe-mode
   :config
   (add-hook 'ruby-mode-hook 'robe-mode)
+  (add-hook 'ruby-mode-hook 'eldoc-mode)
   (defadvice inf-ruby-console-auto
       (before activate-rvm-for-robe activate)
-    (rvm-activate-corresponding-ruby)))
+    (rvm-activate-corresponding-ruby)) 
 
 (use-package web-mode
   :ensure t
@@ -601,6 +629,7 @@
 (use-package rspec-mode
   :ensure t
   :diminish rspec-mode
+  :after ruby-mode
   :config
   (add-hook 'dired-mode-hook 'rspec-dired-mode)
   (general-define-key
@@ -678,7 +707,10 @@
   :pin melpa-stable
   :init
   (defvar haskell-font-lock-symbols)
-  (setq haskell-font-lock-symbols t)
+  (setq haskell-font-lock-symbols t
+        haskell-process-type 'stack-ghci
+        haskell-process-path-ghci "stack"
+        haskell-compile-cabal-build-command "cd %s stack build --ghc-option=-ferror-spans")
   :config
   (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
   (add-hook 'haskell-mode-hook '(lambda ()
@@ -699,13 +731,13 @@
   :config
   (diminish 'auto-revert-mode)
   (diminish 'eldoc-mode)
-  (diminish 'compilation-shell-minor-mode))
+  (diminish 'compilation-shell-minor-mode)
+  (diminish 'smerge-mode))
 
 ;; ==============================
 ;; auto-generated config
 ;; ==============================
 
-(put 'dired-find-alternate-file 'disabled nil)
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -720,3 +752,4 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+(put 'dired-find-alternate-file 'disabled nil)
