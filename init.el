@@ -38,7 +38,7 @@
 			 ("gnu"          . "https://elpa.gnu.org/packages/")
 			 ("melpa"        . "https://melpa.org/packages/")
 			 ("melpa-stable" . "https://stable.melpa.org/packages/")
-			 ("marmalade"    . "http://marmalade-repo.org/packages/"))
+			 ("marmalade"    . "https://marmalade-repo.org/packages/"))
      package-archive-priorities '(("melpa-stable" . 1)))
 (package-initialize)
 
@@ -94,6 +94,11 @@
   :config
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 
+(use-package pretty-lambdada
+  :ensure t
+  :config
+  (pretty-lambda-for-modes))
+
 ;; switch off splash
 (setq inhibit-splash-screen t)
 
@@ -128,6 +133,12 @@
 ;; windmove
 (windmove-default-keybindings)
 (setq windmove-wrap-around t)
+
+;; resize windows
+(global-set-key (kbd "C-S-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "C-S-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "C-S-<down>") 'shrink-window)
+(global-set-key (kbd "C-S-<up>") 'enlarge-window)
 
 ;; y's and n's everywhere
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -233,12 +244,21 @@
 (setq dired-recursive-deletes (quote top)) ; “top” means ask once
 (setq dired-dwim-target t)
 
-; dired-details
+(use-package async
+  :ensure t
+  :config
+  (dired-async-mode 1)
+  (async-bytecomp-package-mode 1))
+
 (use-package dired-details
   :ensure t
   :config
   (dired-details-install)
   (setq dired-details-hidden-string ""))
+
+;; (use-package dired-details+
+;;   :ensure t
+;;   :after (dired dired-details))
 
 (use-package docker
   :ensure t
@@ -258,7 +278,7 @@
   :init
   (which-key-mode)
   :config
-  (which-key-setup-side-window-right-bottom)
+  (which-key-setup-side-window-bottom)
   (setq which-key-sort-order 'which-key-key-order-alpha
 	which-key-side-window-max-width 0.33
 	which-key-idle-delay 0.75))
@@ -348,6 +368,19 @@
   :after projectile
   :config
   (counsel-projectile-on))
+
+;; (use-package persp-mode
+;;   :ensure t
+;;   :pin melpa-stable
+;;   :defer t
+;;   :config
+;;   (persp-mode 1))
+
+;; (use-package persp-projectile
+;;   :ensure t
+;;   :after (persp-mode projectile-mode)
+;;   :pin melpa-stable
+;;   :defer t)
 
 (use-package projectile-rails
   :ensure t
@@ -484,7 +517,9 @@
 
    "d"  '(:ignore t :which-key "directories")
    "dd" 'ido-dired
-   "do" 'dired-other-window
+   "dD" 'dired-other-window
+   "dj" 'dired-jump
+   "dJ" 'dired-jump-other-window
 
    "g"  '(:ignore t :which-key "git")
    "gs" 'magit-status
@@ -530,6 +565,7 @@
    "nu" 'rvm-use
 
    "r"  '(:ignore t :which-key "rails")
+
    "r!" '(:ignore t :which-key "run")
 
    "rg"  '(:ignore t :which-key "goto")
@@ -557,9 +593,16 @@
 ;; ==============================
 
 (use-package org
-  :pin org-elpa
   :ensure t
   :defer t
+  :pin org-elpa
+  :init
+  (setq org-hide-emphasis-markers t)
+  (setq org-src-fontify-natively t)
+  :config
+  (font-lock-add-keywords 'org-mode
+                        '(("^ +\\([-*]\\) "
+                           (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
   )
 
 (use-package org-bullets
@@ -588,7 +631,6 @@
 
 (use-package robe
   :ensure t
-  :defer t
   :after ruby-mode
   :pin melpa-stable
   :diminish robe-mode
@@ -631,22 +673,7 @@
   :diminish rspec-mode
   :after ruby-mode
   :config
-  (add-hook 'dired-mode-hook 'rspec-dired-mode)
-  (general-define-key
-   :states '(normal visual insert emacs)
-   :keymaps 'rspec-verifiable-mode-map
-   :prefix "SPC ,"
-   :non-normal-prefix "C-SPC ,"
-   "a" 'rspec-verify-all
-   "f" 'rspec-run-last-failed
-   "v" 'rspec-verify)
-  (general-define-key
-   :states '(normal visual emacs)
-   :keymaps 'rspec-dired-mode-map
-   :prefix "SPC ,"
-   :non-normal-prefix "C-SPC ,"
-   "a" 'rspec-verify-all
-   "f" 'rspec-run-last-failed))
+  (add-hook 'dired-mode-hook 'rspec-dired-mode))
 
 (use-package bundler
   :ensure t)
@@ -723,6 +750,10 @@
   :config
   (add-hook 'haskell-mode-hook 'intero-mode))
 
+(use-package racket-mode
+  :ensure t
+  :defer t)
+
 ;; ==============================
 ;; Tidy-up modeline
 ;; ==============================
@@ -732,6 +763,8 @@
   (diminish 'auto-revert-mode)
   (diminish 'eldoc-mode)
   (diminish 'compilation-shell-minor-mode)
+  (diminish 'rspec-mode)
+  (diminish 'hideshow)
   (diminish 'smerge-mode))
 
 ;; ==============================
