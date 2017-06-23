@@ -65,6 +65,8 @@
   (creamsody-modeline))
 
 ;; load source code pro font
+;; this is not loaded when running as daemon since there are
+;; no frames when the init file is evaluated
 (set-frame-font "Source Code Pro 11")
 
 ;; icons
@@ -229,6 +231,11 @@
             (unless (eq ibuffer-sorting-mode 'alphabetic)
               (ibuffer-do-sort-by-alphabetic)))))
 
+(use-package yasnippet
+  :ensure t
+  :config
+  (yas-global-mode 1))
+
 ;; ==============================
 ;; Custom packages
 ;; ==============================
@@ -382,6 +389,14 @@
 ;;   :pin melpa-stable
 ;;   :defer t)
 
+(use-package eyebrowse
+  :ensure t
+  :pin melpa-stable
+  :bind
+  ("C-c C-w 0" . eyebrowse-switch-to-window-config-0)
+  :config
+  (eyebrowse-mode t))
+
 (use-package projectile-rails
   :ensure t
   :pin melpa-stable
@@ -399,6 +414,7 @@
   (setq evil-disable-insert-state-bindings t)
   (evil-set-initial-state 'eshell-mode 'emacs)
   (evil-set-initial-state 'inf-ruby-mode 'emacs)
+  (evil-set-initial-state 'commint-mode 'normal)
   (evil-mode 1))
 
 (use-package evil-escape
@@ -464,6 +480,13 @@
   (evil-make-overriding-map mo-git-blame-mode-map 'normal)
   (add-hook 'mo-git-blame-mode-hook #'evil-normalize-keymaps))
 
+(use-package git-messenger
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :init
+  (setq git-messenger:use-magit-popup t))
+
 (use-package general
   :ensure t
   :config
@@ -503,6 +526,7 @@
    "bb" 'ivy-switch-buffer
    "bB" 'ivy-switch-buffer-other-window
    "ss" 'save-buffer
+   "bS" 'save-some-buffers
    "bi" 'ibuffer
    "bs" 'swiper
    "bk" 'kill-this-buffer
@@ -527,6 +551,10 @@
    "gf" 'counsel-git
    "gt" 'git-timemachine-toggle
    "gb" 'mo-git-blame-current
+   "gm" 'magit-dispatch-popup
+   "gS" 'magit-stage-file
+   "gU" 'magit-unstage-file
+   "gc" '(git-messenger:popup-message :which-key "git message")
 
    "c"  '(:ignore t :which-key "counsel")
    "cs" '(swiper :which-key "swiper")
@@ -550,6 +578,7 @@
    "po" '(projectile-multi-occur :which-key "multi-occur")
    "pp" '(counsel-projectile-find-file :which-key "find-file")
    "pf" '(counsel-projectile-switch-project :which-key "switch-project")
+   "pq" '(counsel-projectile-switch-open-project :which-key "switch-open-project")
    "ps" '(counsel-projectile-ag :which-key "ag")
    "pS" '(projectile-save-project-buffers :which-key "save-buffers")
    "pk" '(projectile-kill-buffers :which-key "kill-buffers")
@@ -567,6 +596,12 @@
    "r"  '(:ignore t :which-key "rails")
 
    "r!" '(:ignore t :which-key "run")
+   "r!b" '(projectile-rails-dbconsole :which-key "db console")
+   "r!c" '(projectile-rails-console :which-key "rails console")
+   "r!d" '(projectile-rails-destroy :which-key "rails destroy")
+   "r!g" '(projectile-rails-generate :which-key "rails generate")
+   "r!r" '(projectile-rails-rake :which-key "rails rake")
+   "r!s" '(projectile-rails-server :which-key "rails server")
 
    "rg"  '(:ignore t :which-key "goto")
    "rgd" '(projectile-rails-goto-schema :which-key "goto-schema")
@@ -576,10 +611,16 @@
    "rgr" '(projectile-rails-goto-routes :which-key "goto-routes")
    "rgs" '(projectile-rails-goto-seeds :which-key "goto-seed")
 
+   "rb" '(projectile-rails-find-job :which-key "find job")
    "rc" '(projectile-rails-find-controller :which-key "find-controller")
    "rC" '(projectile-rails-find-current-controller :which-key "find-current-controller")
+   "rk" '(projectile-rails-find-rake :which-key "find rake")
+   "rl" '(projectile-rails-find-lib :which-key "find lib")
    "rm" '(projectile-rails-find-model :which-key "find-model")
    "rM" '(projectile-rails-find-current-model :which-key "find-current-model")
+   "rn" '(projectile-find-migration :which-key "find migration")
+   "rN" '(projectile-find-current-migration :which-key "find current migration")
+   "ro" '(projectile-rails-find-log :which-key "find log")
    "rp" '(projectile-rails-find-spec :which-key "find-spec")
    "rP" '(projectile-rails-find-current-spec :which-key "find-current-spec")
    "rr" '(projectile-rails-console :which-key "console")
@@ -605,13 +646,50 @@
                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
   )
 
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '(
+   (sh . t)
+   (python . t)
+   (R . t)
+   (ruby . t)
+   (ditaa . t)
+   (dot . t)
+   (octave . t)
+   (scheme . t)
+   (sqlite . t)
+   (sql . t)
+   (makefile . t)
+   (perl . t)
+   (C . t)
+   (gnuplot . t)
+   (latex . t)
+   (lisp . t)
+   (emacs-lisp . t)
+   (java . t)
+   (scala . t)
+   (haskell . t)
+   ))
+
 (use-package org-bullets
   :ensure t
   :defer t
   :after org
   :pin melpa-stable
   :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (org-bullets-mode 1))))
+
+(use-package evil-org
+  :ensure t
+  :after (org evil)
+  :pin melpa
+  :config
+  (add-hook 'org-mode-hook 'evil-org-mode)
+  (add-hook 'evil-org-mode-hook
+            (lambda ()
+              (evil-org-set-key-theme))))
 
 ;; ==============================
 ;; Language Support
@@ -759,11 +837,13 @@
 ;; ==============================
 
 (use-package diminish
+  :ensure t
   :config
   (diminish 'auto-revert-mode)
   (diminish 'eldoc-mode)
   (diminish 'compilation-shell-minor-mode)
   (diminish 'rspec-mode)
+  (diminish 'yas)
   (diminish 'hideshow)
   (diminish 'smerge-mode))
 
