@@ -57,6 +57,13 @@
 ;; Basic config
 ;; ==============================
 
+;; improve list packages
+(use-package paradox
+  :ensure t
+  :diminish (paradox-menu-mode . "Paradox")
+  :config
+  (paradox-enable))
+
 ;; creamsody theme
 (use-package creamsody-theme
   :ensure t
@@ -65,9 +72,27 @@
   (creamsody-modeline))
 
 ;; load source code pro font
+;; (set-frame-font "Source Code Pro 11")
 ;; this is not loaded when running as daemon since there are
 ;; no frames when the init file is evaluated
-(set-frame-font "Source Code Pro 11")
+
+;; Stolen from somewhere
+(defun alist-insert (alist key value)
+  "Returns a new alist with (key,value) inserted into it."
+  (let ((newlist nil) (found nil) k v)
+	(dolist (e alist)
+	  (setq k (car e))
+	  (setq v (cdr e))
+	  (if (equal k key)
+		  (progn (unless found (setq newlist (cons (cons k value) newlist)))
+				 (setq found t))
+		  (setq newlist (cons (cons k v) newlist))))
+	(unless found
+	  (setq newlist (cons (cons key value) newlist)))
+	(reverse newlist)))
+
+(setq default-frame-alist
+      (alist-insert default-frame-alist 'font "Source Code Pro 11"))
 
 ;; icons
 (use-package all-the-icons
@@ -169,7 +194,7 @@
 
 (use-package try
   :ensure t
-  :defer t)
+  :commands try)
 
 (use-package eshell
   :init
@@ -194,11 +219,10 @@
 (use-package undo-tree
   :ensure t
   :diminish undo-tree-mode
-  :defer t)
+  :commands undo-tree-visualise)
 
 (use-package undohist
   :ensure t
-  :defer t
   :init
   (customize-set-variable 'udohist-directory "~/.emacs.d/.emacs-undo")
   :config
@@ -206,7 +230,6 @@
 
 (use-package ibuffer-vc
   :ensure t
-  :defer t
   :pin melpa-stable
   :init
   (setq ibuffer-formats
@@ -269,7 +292,6 @@
 
 (use-package docker
   :ensure t
-  :defer t
   :pin melpa-stable
   :diminish docker
   :config
@@ -293,7 +315,9 @@
 (use-package avy
   :ensure t
   :pin melpa-stable
-  :bind (("C-'" . avy-goto-char-2))
+  :bind
+  (("C-'" . avy-goto-char-2)
+   ("C-#" . avy-goto-char-timer))
   :config
   (avy-setup-default))
 
@@ -312,18 +336,19 @@
   :config
   (setq enable-recursive-minibuffers t)
   (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks
+  (setq ivy-virtual-abbreviate "full")
   (setq ivy-height 15)               ; set height of the ivy window
   (setq ivy-count-format "(%d/%d) ") ; count format, from the ivy help page
+  (ivy-set-occur 'counsel-git-grep 'counsel-git-grep-occur)
+  (ivy-set-occur 'swiper 'swiper-occur)
   )
 
 (use-package hydra
   :ensure t
-  :pin melpa-stable
-  :defer t)
+  :pin melpa-stable)
 
 (use-package ivy-hydra
   :ensure t
-  :defer t
   :pin melpa-stable
   :after (ivy hydra))
 
@@ -345,7 +370,9 @@
   :pin melpa-stable
   :bind
   (:map read-expression-map
-	("C-r" . counsel-expression-history)))
+	("C-r" . counsel-expression-history))
+  :config
+  (setq recentf-max-saved-items 500))
 
 (use-package counsel-gtags
   :ensure t
@@ -452,6 +479,7 @@
   (setq magit-repository-directories
         '(("~/Code/otb/" . 1) ("~/moi/" . 2) ("~/.emacs.d" . 0)))
   (setq magit-refs-local-branch-format "%4c %-25n %h %U%m\n")
+  (setq magit-completing-read-function 'ivy-completing-read)
   :config
   (add-to-list 'magit-repolist-columns
                '("Unpulled" 25 magit-repolist-column-unpulled-from-upstream nil)  1)
@@ -558,6 +586,19 @@
 
    "c"  '(:ignore t :which-key "counsel")
    "cs" '(swiper :which-key "swiper")
+   "cm" '(swiper-multi :which-key "swiper-multi")
+   "cc" '(ivy-resume :which-key "ivy resume")
+   "ca" '(counsel-ag :which-key "ag")
+   "cd" '(counsel-dpkg :which-key "dpkg")
+   "ci" '(counsel-imenu :which-key "imenu")
+   "cl" '(counsel-locate :which-key "locate")
+   "ct" '(counsel-load-theme :which-key "themes")
+   "cx" '(counsel-linux-app :which-key "linux-apps")
+   "cy" '(counsel-yank-pop :which-key "yank-pop")
+
+   "c"  '(:ignore t :which-key "counsel")
+   "cs" '(swiper :which-key "swiper")
+   "cm" '(swiper-multi :which-key "swiper-multi")
    "cc" '(ivy-resume :which-key "ivy resume")
    "ca" '(counsel-ag :which-key "ag")
    "cd" '(counsel-dpkg :which-key "dpkg")
@@ -635,45 +676,39 @@
 
 (use-package org
   :ensure t
-  :defer t
   :pin org-elpa
   :init
   (setq org-hide-emphasis-markers t)
   (setq org-src-fontify-natively t)
+  (bind-key "C-c c" 'org-capture)
   :config
   (font-lock-add-keywords 'org-mode
                         '(("^ +\\([-*]\\) "
                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-  )
+  (setq org-capture-templates
+        '(("t" "Agenda Todo" entry
+           (file+headline "~/Org/todo.org" "Agenda")
+           "\n\n** TODO %?\n%T\n\n%i\n%a\n\n\n"
+           :empty-lines 1)
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '(
-   (sh . t)
-   (python . t)
-   (R . t)
-   (ruby . t)
-   (ditaa . t)
-   (dot . t)
-   (octave . t)
-   (scheme . t)
-   (sqlite . t)
-   (sql . t)
-   (makefile . t)
-   (perl . t)
-   (C . t)
-   (gnuplot . t)
-   (latex . t)
-   (lisp . t)
-   (emacs-lisp . t)
-   (java . t)
-   (scala . t)
-   (haskell . t)
-   ))
+          ("n" "Agenda Notes" entry
+           (file+headline "~/Org/notes.org" "Notes")
+           "\n\n** %?\n%T\n%i\n%a\n\n\n"
+           :empty-lines 1)
+
+          ("l" "Link" entry
+           (file+headline "~/Org/links.org" "Links")
+           "* %? %^L %^g \n%T"
+           :prepend t)
+
+          ("j" "Journal" entry
+           (file+datetree "~/Org/journal.org")
+           "* %?\n\nEntered on %U\n  %i\n  %a"
+           :prepend t)))
+  )
 
 (use-package org-bullets
   :ensure t
-  :defer t
   :after org
   :pin melpa-stable
   :config
@@ -681,17 +716,7 @@
             (lambda ()
               (org-bullets-mode 1))))
 
-(use-package evil-org
-  :ensure t
-  :after (org evil)
-  :pin melpa
-  :config
-  (add-hook 'org-mode-hook 'evil-org-mode)
-  (add-hook 'evil-org-mode-hook
-            (lambda ()
-              (evil-org-set-key-theme))))
-
-;; ==============================
+; ==============================
 ;; Language Support
 ;; ==============================
 
@@ -707,6 +732,14 @@
   :defer t
   :after ruby-mode)
 
+(use-package ruby-tools
+  :ensure t
+  :after ruby-mode)
+
+(use-package ruby-hash-syntax
+  :ensure t
+  :bind (("C->" . ruby-toggle-hash-syntax)))
+
 (use-package robe
   :ensure t
   :after ruby-mode
@@ -717,11 +750,10 @@
   (add-hook 'ruby-mode-hook 'eldoc-mode)
   (defadvice inf-ruby-console-auto
       (before activate-rvm-for-robe activate)
-    (rvm-activate-corresponding-ruby)) 
+    (rvm-activate-corresponding-ruby)))
 
 (use-package web-mode
   :ensure t
-  :defer t
   :mode
   (("\\.erb\\'" . web-mode)
    ("\\.html?\\'" . web-mode))
@@ -751,6 +783,7 @@
   :diminish rspec-mode
   :after ruby-mode
   :config
+  (rspec-install-snippets) 
   (add-hook 'dired-mode-hook 'rspec-dired-mode))
 
 (use-package bundler
@@ -772,6 +805,25 @@
   :init
   (setq markdown-command "multimarkdown"))
 
+(use-package js2-mode
+  :ensure t
+  :pin melpa-stable
+  :mode
+  (("\\.js\\'" . js2-mode))
+  :init
+  (setq-default js2-basic-offset 2)
+  (setq-default js2-indent-level 2))
+
+(use-package skewer-mode
+  :ensure t
+  :pin melpa-stable
+  :bind
+  (("C-x C-e" . skewer-eval-last-expression)
+   ("C-M-x" . skewer-eval-defun)
+   ("C-c C-k" . skewer-load-buffer))
+  :config
+  (skewer-setup))
+
 (use-package erlang
   :ensure t
   :defer t
@@ -788,8 +840,8 @@
   (setq python-shell-interpreter "/home/timmillar/anaconda2/bin/ipython"
 	python-shell-interpreter-args "--simple-prompt -i")
   :config
-  (add-hook 'python-hook 'anaconda-mode)
-  (add-hook 'python-hook 'anaconda-eldoc-mode))
+  (add-hook 'python-mode-hook 'anaconda-mode)
+  (add-hook 'python-mode-hook 'anaconda-eldoc-mode))
 
 (use-package virtualenvwrapper
   :ensure t
@@ -843,9 +895,53 @@
   (diminish 'eldoc-mode)
   (diminish 'compilation-shell-minor-mode)
   (diminish 'rspec-mode)
-  (diminish 'yas)
+  (diminish 'yas-minor-mode)
   (diminish 'hideshow)
-  (diminish 'smerge-mode))
+  (diminish 'smerge-mode)
+  (diminish 'abbrev-mode)
+  (diminish 'evil-org)
+  (diminish 'ruby-tools)
+  (diminish 'docker-mode)
+  (diminish 'docker-global-mode)
+  (diminish 'docker))
+
+;; hmmmmm ....
+
+(use-package evil-org ;; erroring?
+  :ensure t
+  :after (org evil)
+  :diminish evil-org
+  :pin melpa
+  :config
+  (add-hook 'org-mode-hook 'evil-org-mode)
+  (add-hook 'evil-org-mode-hook
+            (lambda ()
+              (evil-org-set-key-theme))))
+
+(org-babel-do-load-languages ; could be where problem with init is introduced
+ 'org-babel-load-languages
+ '(
+   (sh . t)
+   (python . t)
+   (R . t)
+   (ruby . t)
+   (ditaa . t)
+   (dot . t)
+   (octave . t)
+   (scheme . t)
+   (sqlite . t)
+   (sql . t)
+   (makefile . t)
+   (perl . t)
+   (C . t)
+   (gnuplot . t)
+   (latex . t)
+   (lisp . t)
+   (emacs-lisp . t)
+   (java . t)
+   (scala . t)
+   (haskell . t)
+   ))
 
 ;; ==============================
 ;; auto-generated config
@@ -865,4 +961,6 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+;; Possible cause of errors in init file
 (put 'dired-find-alternate-file 'disabled nil)
