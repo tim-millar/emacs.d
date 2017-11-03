@@ -614,6 +614,7 @@
    "pd" '(counsel-projectile-find-dir :which-key "find-dir")
    "pD" '(projectile-dired :which-key "dired")
    "pe" '(projectile-recentf :which-key "recentf")
+   "pg" '(projectile-find-file-dwim :which-key "find-file-dwim")
    "pi" '(projectile-ibuffer :which-key "iBuffer")
    "pj" '(projectile-find-tag :which-key "find-tag")
    "po" '(projectile-multi-occur :which-key "multi-occur")
@@ -659,8 +660,8 @@
    "rl" '(projectile-rails-find-lib :which-key "find lib")
    "rm" '(projectile-rails-find-model :which-key "find-model")
    "rM" '(projectile-rails-find-current-model :which-key "find-current-model")
-   "rn" '(projectile-find-migration :which-key "find migration")
-   "rN" '(projectile-find-current-migration :which-key "find current migration")
+   "rn" '(projectile-rails-find-migration :which-key "find migration")
+   "rN" '(projectile-rails-find-current-migration :which-key "find current migration")
    "ro" '(projectile-rails-find-log :which-key "find log")
    "rp" '(projectile-rails-find-spec :which-key "find-spec")
    "rP" '(projectile-rails-find-current-spec :which-key "find-current-spec")
@@ -725,6 +726,13 @@
   ; :mode
   ; (("\\.rb\\" . ruby-mode) ("\\.ru\\" . ruby-mode)
   ;  ("\\.rake\\" . ruby-mode) ("Gemfile" . ruby-mode))
+  :init
+  (setq ruby-insert-encoding-magic-comment nil)
+  (setq ruby-deep-indent-paren nil)
+  ;; (eval-after-load 'projectile
+  ;;   '(setq rake-completion-system projectile-completion-system))
+  :config
+  (add-hook 'ruby-mode-hook 'whitespace-cleanup)
   )
 
 (use-package inf-ruby
@@ -805,24 +813,28 @@
   :init
   (setq markdown-command "multimarkdown"))
 
-(use-package js2-mode
-  :ensure t
-  :pin melpa-stable
-  :mode
-  (("\\.js\\'" . js2-mode))
-  :init
-  (setq-default js2-basic-offset 2)
-  (setq-default js2-indent-level 2))
+;; (use-package js2-mode
+;;   :ensure t
+;;   :pin melpa-stable
+;;   :mode
+;;   (("\\.js\\'" . js2-mode))
+;;   :init
+;;   (setq-default js2-basic-offset 2)
+;;   (setq-default js2-indent-level 2))
 
-(use-package skewer-mode
-  :ensure t
-  :pin melpa-stable
-  :bind
-  (("C-x C-e" . skewer-eval-last-expression)
-   ("C-M-x" . skewer-eval-defun)
-   ("C-c C-k" . skewer-load-buffer))
-  :config
-  (skewer-setup))
+;; (use-package rjsx-mode
+;;   :ensure t
+;;   :pin melpa-stable)
+
+;; (use-package skewer-mode
+;;   :ensure t
+;;   :pin melpa-stable
+;;   :bind
+;;   (("C-x C-e" . skewer-eval-last-expression)
+;;    ("C-M-x" . skewer-eval-defun)
+;;    ("C-c C-k" . skewer-load-buffer))
+;;   :config
+;;   (skewer-setup))
 
 (use-package erlang
   :ensure t
@@ -964,3 +976,4 @@
 
 ;; Possible cause of errors in init file
 (put 'dired-find-alternate-file 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
