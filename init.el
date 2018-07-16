@@ -9,38 +9,39 @@
 
 ;; set up tls-signing for emacs packages
 ;; taken from "your editor is malware" article
-(require 'cl)
-(setq tls-checktrust t)
+;; (require 'cl)
+;; (setq tls-checktrust t)
 
-(setq python (or (executable-find "py.exe")
-                 (executable-find "python")
-                 ))
+;; (setq python (or (executable-find "py.exe")
+;;                  (executable-find "python")
+;;                  ))
 
-(let ((trustfile
-       (replace-regexp-in-string
-        "\\\\" "/"
-        (replace-regexp-in-string
-         "\n" ""
-         (shell-command-to-string (concat python " -m certifi"))))))
-  (setq tls-program
-        (list
-         (format "gnutls-cli%s --x509cafile %s -p %%p %%h"
-                 (if (eq window-system 'w32) ".exe" "") trustfile)))
-  (setq gnutls-verify-error t)
-  (setq gnutls-trustfiles (list trustfile)))
+;; (let ((trustfile
+;;        (replace-regexp-in-string
+;;         "\\\\" "/"
+;;         (replace-regexp-in-string
+;;          "\n" ""
+;;          (shell-command-to-string (concat python " -m certifi"))))))
+;;   (setq tls-program
+;;         (list
+;;          (format "gnutls-cli%s --x509cafile %s -p %%p %%h"
+;;                  (if (eq window-system 'w32) ".exe" "") trustfile)))
+;;   (setq gnutls-verify-error t)
+;;   (setq gnutls-trustfiles (list trustfile)))
 
 ;; Load package and set archives
 (require 'package)
 
 (setq package-enable-at-startup nil)
 
-(setq package-archives '(("org-elpa"     . "http://orgmode.org/elpa/")
+(setq package-archives '(
+       ("org-elpa"     . "http://orgmode.org/elpa/")
 			 ("gnu"          . "https://elpa.gnu.org/packages/")
 			 ("melpa"        . "https://melpa.org/packages/")
 			 ("melpa-stable" . "https://stable.melpa.org/packages/")
 			 ("marmalade"    . "https://marmalade-repo.org/packages/")
-                         )
-     package-archive-priorities '(("melpa-stable" . 1)))
+       )
+     package-archive-priorities '(("melpa" . 1)))
 (package-initialize)
 
 ;; Bootstrap `use-package'
@@ -90,7 +91,7 @@
 	  (if (equal k key)
 		  (progn (unless found (setq newlist (cons (cons k value) newlist)))
 				 (setq found t))
-		  (setq newlist (cons (cons k v) newlist))))
+        (setq newlist (cons (cons k v) newlist))))
 	(unless found
 	  (setq newlist (cons (cons key value) newlist)))
 	(reverse newlist)))
@@ -196,6 +197,11 @@
 
 (add-to-list 'auto-mode-alist '("\\.log\\'" . auto-revert-tail-mode))
 
+(use-package info-colors
+  :ensure t
+  :config
+  (add-hook 'Info-selection-hook 'info-colors-fontify-node))
+
 (use-package try
   :ensure t
   :commands try)
@@ -255,27 +261,28 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
 ;; define aliases
 (add-hook 'eshell-mode-hook (lambda ()
 
-    (eshell/alias "ec" "find-file $1")
-    (eshell/alias "ff" "find-file $1")
-    (eshell/alias "emacs" "find-file $1")
-    (eshell/alias "oo" "find-file-other-window $1")
-    (eshell/alias "ll" "ls -AlohG")
-    (eshell/alias "d" "dired $1")
+                              (eshell/alias "ec" "find-file $1")
+                              (eshell/alias "ff" "find-file $1")
+                              (eshell/alias "fo" "find-file-other-window $1")
+                              (eshell/alias "emacs" "find-file $1")
+                              (eshell/alias "oo" "find-file-other-window $1")
+                              (eshell/alias "ll" "ls -AlohG")
+                              (eshell/alias "d" "dired $1")
 
-    (eshell/alias "be" "bundle exec")
-    (eshell/alias "befs" "bundle exec foreman start")
+                              (eshell/alias "be" "bundle exec")
+                              (eshell/alias "befs" "bundle exec foreman start")
 
-    (eshell/alias "gco" "git checkout $1")
-    (eshell/alias "gbv" "git branch -vv")
-    (eshell/alias "gfa" "git fetch --all")
-    (eshell/alias "gfb" "gfa && gbv")
+                              (eshell/alias "gco" "git checkout $1")
+                              (eshell/alias "gbv" "git branch -vv")
+                              (eshell/alias "gfa" "git fetch --all")
+                              (eshell/alias "gfb" "gfa && gbv")
 
-    (eshell/alias "gd" "magit-diff-unstaged")
-    (eshell/alias "gds" "magit-diff-staged")
-    (eshell/alias "gst" "magit-status")
-    (eshell/alias "gl" "magit-log-current") ; why does this not work?
-    (define-key eshell-mode-map (kbd "C-d")
-      'tm/eshell-quit-or-delete-char)))
+                              (eshell/alias "gd" "magit-dff-unstaged")
+                              (eshell/alias "gds" "magit-diff-staged")
+                              (eshell/alias "gst" "magit-status")
+                              (eshell/alias "gl" "magit-log-current") ; why does this not work?
+                              (define-key eshell-mode-map (kbd "C-d")
+                                'tm/eshell-quit-or-delete-char)))
 
 (use-package exec-path-from-shell
   :ensure t
@@ -302,31 +309,34 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :pin melpa-stable
   :init
   (setq ibuffer-formats
-      '((mark modified read-only vc-status-mini " "
-              (name 18 18 :left :elide)
-              " "
-              (size 9 -1 :right)
-              " "
-              (mode 16 16 :left :elide)
-              " "
-              (vc-status 16 16 :left)
-              " "
-              filename-and-process)))
+        '((mark modified read-only vc-status-mini " "
+                (name 18 18 :left :elide)
+                " "
+                (size 9 -1 :right)
+                " "
+                (mode 16 16 :left :elide)
+                " "
+                (vc-status 16 16 :left)
+                " "
+                filename-and-process)))
   :config
   (add-hook 'ibuffer-hook
-          (lambda ()
-            (ibuffer-auto-mode 1)
-            (add-to-list 'ibuffer-never-show-predicates "^\\*helm")
-            (add-to-list 'ibuffer-never-show-predicates "^\\*magit")
-            (setq ibuffer-show-empty-filter-groups nil)
-            (ibuffer-vc-set-filter-groups-by-vc-root)
-            (unless (eq ibuffer-sorting-mode 'alphabetic)
-              (ibuffer-do-sort-by-alphabetic)))))
+            (lambda ()
+              (ibuffer-auto-mode 1)
+              (add-to-list 'ibuffer-never-show-predicates "^\\*helm")
+              (add-to-list 'ibuffer-never-show-predicates "^\\*magit")
+              (setq ibuffer-show-empty-filter-groups nil)
+              (ibuffer-vc-set-filter-groups-by-vc-root)
+              (unless (eq ibuffer-sorting-mode 'alphabetic)
+                (ibuffer-do-sort-by-alphabetic)))))
 
 (use-package yasnippet
   :ensure t
   :config
   (yas-global-mode 1))
+
+(use-package wgrep
+  :ensure t)
 
 ;; ==============================
 ;; Custom packages
@@ -364,8 +374,10 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :ensure t
   :pin melpa-stable
   :diminish docker
-  :config
-  (docker-global-mode))
+  :bind ("C-c d" . docker))
+
+(use-package system-packages
+  :ensure t)
 
 ;; ==============================
 ;; UI Config
@@ -381,8 +393,8 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :config
   (which-key-setup-side-window-bottom)
   (setq which-key-sort-order 'which-key-key-order-alpha
-	which-key-side-window-max-width 0.33
-	which-key-idle-delay 0.75))
+        which-key-side-window-max-width 0.33
+        which-key-idle-delay 0.75))
 
 (use-package avy
   :ensure t
@@ -400,11 +412,11 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :init (ivy-mode 1)
   :bind
   (:map ivy-minibuffer-map
-	("C-;" . ivy-avy)
-	("C-j" . ivy-next-line)
-	("C-k" . ivy-previous-line)
-	("M-j" . ivy-next-history-element)
-	("M-k" . ivy-previous-history-element))
+        ("C-;" . ivy-avy)
+        ("C-j" . ivy-next-line)
+        ("C-k" . ivy-previous-line)
+        ("M-j" . ivy-next-history-element)
+        ("M-k" . ivy-previous-history-element))
   :config
   (setq enable-recursive-minibuffers t)
   (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks
@@ -442,7 +454,7 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :pin melpa-stable
   :bind
   (:map read-expression-map
-	("C-r" . counsel-expression-history))
+        ("C-r" . counsel-expression-history))
   :config
   (setq recentf-max-saved-items 500))
 
@@ -473,7 +485,7 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :ensure t
   :after projectile
   :config
-  (counsel-projectile-on))
+  (counsel-projectile-mode))
 
 ;; (use-package persp-mode
 ;;   :ensure t
@@ -570,47 +582,47 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :config
   (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode))
 
-(use-package treemacs
-  :ensure t
-  :defer t
-  :config
-  (progn
-    (use-package treemacs-evil
-      :ensure t
-      :demand t)
-    (setq treemacs-follow-after-init          t
-          treemacs-width                      35
-          treemacs-indentation                2
-          treemacs-collapse-dirs              (if (executable-find "python") 3 0)
-          treemacs-silent-refresh             nil
-          treemacs-change-root-without-asking nil
-          treemacs-sorting                    'alphabetic-desc
-          treemacs-show-hidden-files          t
-          treemacs-never-persist              nil
-          treemacs-is-never-other-window      nil
-          treemacs-goto-tag-strategy          'refetch-index)
-    (treemacs-follow-mode t)
-    (treemacs-filewatch-mode t)
-    ;; (pcase (cons (not (null (executable-find "git")))
-    ;;              (not (null (executable-find "python"))))
-    ;;   (`(t . t)
-    ;;    (treemacs-git-mode 'extended))
-    ;;   (`(t . _)
-    ;;    (treemacs-git-mode 'simple)))
-    )
-  :bind
-  (:map global-map
-        ([f6]         . treemacs-toggle)
-        ("M-0"        . treemacs-select-window)
-        ("C-c 1"      . treemacs-delete-other-windows)
-        ))
+;; (use-package treemacs
+;;   :ensure t
+;;   :defer t
+;;   :config
+;;   (progn
+;;     (use-package treemacs-evil
+;;       :ensure t
+;;       :demand t)
+;;     (setq treemacs-follow-after-init          t
+;;           treemacs-width                      35
+;;           treemacs-indentation                2
+;;          treemacs-collapse-dirs              (if (executable-find "python") 3 0)
+;;           treemacs-silent-refresh             nil
+;;           treemacs-change-root-without-asking nil
+;;           treemacs-sorting                    'alphabetic-desc
+;;           treemacs-show-hidden-files          t
+;;           treemacs-never-persist              nil
+;;           treemacs-is-never-other-window      nil
+;;           treemacs-goto-tag-strategy          'refetch-index)
+;;     (treemacs-follow-mode t)
+;;     (treemacs-filewatch-mode t)
+;;     ;; (pcase (cons (not (null (executable-find "git")))
+;;     ;;              (not (null (executable-find "python"))))
+;;     ;;   (`(t . t)
+;;     ;;    (treemacs-git-mode 'extended))
+;;     ;;   (`(t . _)
+;;     ;;    (treemacs-git-mode 'simple)))
+;;     )
+;;   :bind
+;;   (:map global-map
+;;         ([f6]         . treemacs-toggle)
+;;         ("M-0"        . treemacs-select-window)
+;;         ("C-c 1"      . treemacs-delete-other-windows)
+;;         ))
 
-(use-package treemacs-projectile
-  :defer t
-  :ensure t
-  :after (treemacs projectile)
-  :config
-  (setq treemacs-header-function #'treemacs-projectile-create-header))
+;; (use-package treemacs-projectile
+;;   :defer t
+;;   :ensure t
+;;   :after (treemacs projectile)
+;;   :config
+;;   (setq treemacs-header-function #'treemacs-projectile-create-header))
 
 (use-package magit
   :ensure t
@@ -633,14 +645,14 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :config
   (setq evil-magit-state 'normal))
 
-(use-package magithub
-  :ensure t
-  :after magit
-  :init
-  (defalias 'ghub-request 'ghub--request)
-  (defvar ghub-extra-headers nil)
-  :config
-  (magithub-feature-autoinject t))
+;; (use-package magithub
+;;   :ensure t
+;;   :after magit
+;;   :init
+;;   (defalias 'ghub-request 'ghub--request)
+;;   (defvar ghub-extra-headers nil)
+;;   :config
+;;   (magithub-feature-autoinject t))
 
 (use-package git-timemachine
   :ensure t
@@ -664,11 +676,19 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :init
   (setq git-messenger:use-magit-popup t))
 
+(use-package git-link
+  :ensure t
+  :defer t
+  :pin melpa-stable
+  :init
+  (setq git-link-open-in-browser t))
+
 (use-package general
   :ensure t
   :config
   (general-evil-setup t)
   (general-define-key
+   :keymaps 'global-map
    :states '(normal visual insert emacs)
    :prefix "SPC"
    :non-normal-prefix "C-SPC"
@@ -679,11 +699,13 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
    "." '(counsel-gtags-find-symbol :which-key "find-symbol")
    "u" '(undo-tree-visualize :which-key "undo tree")
 
-   "j"  '(:ignore t :which-key "dumb jump")
+   "j"  '(:ignore t :which-key "jump")
    "jj" 'dumb-jump-go
    "jo" 'dumb-jump-go-other-window
    "jb" 'dumb-jump-back
    "jq" 'dumb-jump-quick-look
+   "jc" 'avy-goto-char-2
+   "jt" 'avy-goto-char-timer
 
    "h"  '(:ignore t :which-key "help")
    "ha" 'apropos-command
@@ -732,6 +754,7 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
    "gS" 'magit-stage-file
    "gU" 'magit-unstage-file
    "gc" '(git-messenger:popup-message :which-key "git message")
+   "gl" 'git-link
 
    "c"  '(:ignore t :which-key "counsel")
    "cs" '(swiper :which-key "swiper")
@@ -808,7 +831,9 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
    "rC" '(projectile-rails-find-current-controller :which-key "find-current-controller")
    "rk" '(projectile-rails-find-rake :which-key "find rake")
    "rl" '(projectile-rails-find-lib :which-key "find lib")
+   "rh" '(projectile-rails-find-helper :which-key "find-helper")
    "ri" '(projectile-rails-find-initializer :which-key "find initializer")
+   "rj" '(projectile-rails-find-javascript :which-key "find javascript")
    "rm" '(projectile-rails-find-model :which-key "find-model")
    "rM" '(projectile-rails-find-current-model :which-key "find-current-model")
    "rn" '(projectile-rails-find-migration :which-key "find migration")
@@ -821,13 +846,13 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
    "rv" '(projectile-rails-find-view :which-key "find-view")
    "rV" '(projectile-rails-find-current-view :which-key "find-current-view")
 
-   "ft" 'treemacs-toggle
-   "fT" 'treemacs
-   "fB" 'treemacs-bookmark
-   "f C-t" 'treemacs-find-file
-   "f M-t" 'treemacs-find-tag
-   "fp" 'treemacs-projectile-toggle
-   "fP" 'treemacs-projectile
+   ;; "ft" 'treemacs-toggle
+   ;; "fT" 'treemacs
+   ;; "fB" 'treemacs-bookmark
+   ;; "f C-t" 'treemacs-find-file
+   ;; "f M-t" 'treemacs-find-tag
+   ;; "fp" 'treemacs-projectile-toggle
+   ;; "fP" 'treemacs-projectile
 
    "xx" '(eshell-here :which-key "eshell-here")
    ))
@@ -881,6 +906,17 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
 ; ==============================
 ;; Language Support
 ;; ==============================
+
+(setq-default c-basic-offset 2
+              tab-width 2
+              js-indent-level 2
+              coffee-tab-width 2
+              javascript-indent-level 2
+              js2-basic-offset 2
+              web-mode-markup-indent-offset 2
+              web-mode-css-indent-offset 2
+              web-mode-code-indent-offset 2
+              css-indent-offset 2)
 
 (use-package ruby-mode
   :ensure t
@@ -957,6 +993,8 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :ensure t
   :diminish rspec-mode
   :after ruby-mode
+  :init
+  (setq rspec-use-rake-when-possible nil)
   :config
   (rspec-install-snippets)
   (add-hook 'dired-mode-hook 'rspec-dired-mode))
@@ -979,6 +1017,16 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
    ("\\.markdown\\'" . markdown-mode))
   :init
   (setq markdown-command "multimarkdown"))
+
+(with-eval-after-load 'python
+  (defun python-shell-completion-native-try ()
+    "Return non-nil if can trigger native completion."
+    (let ((python-shell-completion-native-enable t)
+          (python-shell-completion-native-output-timeout
+           python-shell-completion-native-try-output-timeout))
+      (python-shell-completion-native-get-completions
+       (get-buffer-process (current-buffer))
+       nil "_"))))
 
 ;; (use-package js2-mode
 ;;   :ensure t
@@ -1059,9 +1107,9 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
 ;;   :config
 ;;   (add-hook 'haskell-mode-hook 'intero-mode))
 
-;; (use-package racket-mode
-;;   :ensure t
-;;   :defer t)
+(use-package racket-mode
+  :ensure t
+  :defer t)
 
 ;; ==============================
 ;; Tidy-up modeline
@@ -1136,7 +1184,7 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
     ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default)))
  '(package-selected-packages
    (quote
-    (evil-surround evil-avy sicp treemacs-evil treemacs-projectile evil-collection ruby-refactor magithub yasnippet yaml-mode which-key web-mode use-package undohist try sbt-mode rvm ruby-tools ruby-hash-syntax rspec-mode robe rainbow-delimiters projectile-rails pretty-lambdada paradox org-bullets mo-git-blame markdown-mode ivy-hydra ibuffer-vc haskell-mode git-timemachine git-messenger general flycheck feature-mode faceup eyebrowse exec-path-from-shell evil-smartparens evil-org evil-nerd-commenter evil-magit evil-escape eshell-git-prompt dumb-jump docker dired-details darktooth-theme creamsody-theme counsel-projectile counsel-gtags company bundler anaconda-mode all-the-icons-ivy all-the-icons-dired ace-window))))
+    (php-mode info-colors system-packages git-link racket-mode wgrep sicp evil-collection ruby-refactor magithub yasnippet yaml-mode which-key web-mode use-package undohist try sbt-mode rvm ruby-tools ruby-hash-syntax rspec-mode robe rainbow-delimiters projectile-rails pretty-lambdada paradox org-bullets mo-git-blame markdown-mode ivy-hydra ibuffer-vc haskell-mode git-timemachine git-messenger flycheck feature-mode faceup eyebrowse exec-path-from-shell eshell-git-prompt dumb-jump docker dired-details darktooth-theme creamsody-theme counsel-projectile counsel-gtags company bundler anaconda-mode all-the-icons-ivy all-the-icons-dired ace-window))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
