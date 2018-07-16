@@ -38,7 +38,8 @@
 			 ("gnu"          . "https://elpa.gnu.org/packages/")
 			 ("melpa"        . "https://melpa.org/packages/")
 			 ("melpa-stable" . "https://stable.melpa.org/packages/")
-			 ("marmalade"    . "https://marmalade-repo.org/packages/"))
+			 ("marmalade"    . "https://marmalade-repo.org/packages/")
+                         )
      package-archive-priorities '(("melpa-stable" . 1)))
 (package-initialize)
 
@@ -66,10 +67,13 @@
 
 ;; creamsody theme
 (use-package creamsody-theme
+  :ensure t)
+
+(use-package darktooth-theme
   :ensure t
   :config
-  (load-theme 'creamsody t)
-  (creamsody-modeline))
+  (load-theme 'darktooth t)
+  (darktooth-modeline))
 
 ;; load source code pro font
 ;; (set-frame-font "Source Code Pro 11")
@@ -214,6 +218,71 @@
   :config
   (eshell-git-prompt-use-theme 'powerline))
 
+;; eshell popups
+(defun eshell-here ()
+  "Opens up a new shell in the directory associated with the current buffer's file.
+The eshell is renamed to match that directory to make multiple eshell windows easier."
+  (interactive)
+  (let* ((parent (if (buffer-file-name)
+                     (file-name-directory (buffer-file-name))
+                   default-directory))
+         (height (/ (window-total-height) 3))
+         (name   (car (last (split-string parent "/" t)))))
+    (split-window-vertically (- height))
+    (other-window 1)
+    (eshell "new")
+    (rename-buffer (concat "*eshell: " name "*"))
+    (insert (concat "ls"))
+    (eshell-send-input)))
+
+(defun eshell/cdp ()
+  "Change directory to the project's root."
+  (eshell/cd (projectile-project-root)))
+
+(defun eshell/d (&rest args)
+  "Opens ARGS in dired mode."
+  (dired (pop args) "."))
+
+(defun tm/eshell-quit-or-delete-char (arg)
+  "Quits the eshell or deletes ARG (a char)."
+  (interactive "p")
+  (if (and (eolp) (looking-back eshell-prompt-regexp))
+      (progn
+        (eshell-life-is-too-much) ; Why not? (eshell/exit)
+        (delete-window))
+    (delete-forward-char arg)))
+
+;; define aliases
+(add-hook 'eshell-mode-hook (lambda ()
+
+    (eshell/alias "ec" "find-file $1")
+    (eshell/alias "ff" "find-file $1")
+    (eshell/alias "emacs" "find-file $1")
+    (eshell/alias "oo" "find-file-other-window $1")
+    (eshell/alias "ll" "ls -AlohG")
+    (eshell/alias "d" "dired $1")
+
+    (eshell/alias "be" "bundle exec")
+    (eshell/alias "befs" "bundle exec foreman start")
+
+    (eshell/alias "gco" "git checkout $1")
+    (eshell/alias "gbv" "git branch -vv")
+    (eshell/alias "gfa" "git fetch --all")
+    (eshell/alias "gfb" "gfa && gbv")
+
+    (eshell/alias "gd" "magit-diff-unstaged")
+    (eshell/alias "gds" "magit-diff-staged")
+    (eshell/alias "gst" "magit-status")
+    (eshell/alias "gl" "magit-log-current") ; why does this not work?
+    (define-key eshell-mode-map (kbd "C-d")
+      'tm/eshell-quit-or-delete-char)))
+
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize)))
+
 (use-package tramp)
 
 (use-package undo-tree
@@ -273,6 +342,7 @@
 (setq dired-recursive-copies (quote always)) ; “always” means no asking
 (setq dired-recursive-deletes (quote top)) ; “top” means ask once
 (setq dired-dwim-target t)
+(setq dired-use-ls-dired nil) ; macos doesn't support ls --dired
 
 (use-package async
   :ensure t
@@ -306,6 +376,8 @@
   :diminish which-key-mode
   :init
   (which-key-mode)
+  :bind
+  (("<f5>" . which-key-show-top-level))
   :config
   (which-key-setup-side-window-bottom)
   (setq which-key-sort-order 'which-key-key-order-alpha
@@ -435,6 +507,12 @@
   :config
   (projectile-rails-global-mode))
 
+(use-package flycheck
+  :ensure t
+  :diminish flycheck-mode
+  :config
+  (global-flycheck-mode))
+
 (use-package evil
   :ensure t
   :config
@@ -457,27 +535,89 @@
   :config
   (evilnc-default-hotkeys))
 
+(use-package evil-surround
+  :ensure t
+  :after evil
+  :config
+  (global-evil-surround-mode 1))
+
+(use-package evil-avy
+  :ensure t
+  :after (evil avy)
+  :config
+  (evil-avy-mode 1))
+
+;; (use-package evil-collection
+;;   :ensure t
+;;   :after evil
+;;   :init
+;;   (evil-collection-init))
+
 (use-package smartparens
   :ensure t
   :diminish smartparens-mode
+  :init
+  ;; (setq smartparens-strict-mode nil)
   :config
-  (smartparens-global-mode t)
   (use-package smartparens-config)
-  (use-package smartparens-html
-    :defer t)
-  (use-package smartparens-ruby
-    :defer t)
-  (use-package evil-smartparens
-    :diminish evil-smartparens-mode
-    :config
-    (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode)))
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode t))
+
+(use-package evil-smartparens
+  :ensure t
+  :diminish evil-smartparens-mode
+  :after (evil smartparens)
+  :config
+  (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode))
+
+(use-package treemacs
+  :ensure t
+  :defer t
+  :config
+  (progn
+    (use-package treemacs-evil
+      :ensure t
+      :demand t)
+    (setq treemacs-follow-after-init          t
+          treemacs-width                      35
+          treemacs-indentation                2
+          treemacs-collapse-dirs              (if (executable-find "python") 3 0)
+          treemacs-silent-refresh             nil
+          treemacs-change-root-without-asking nil
+          treemacs-sorting                    'alphabetic-desc
+          treemacs-show-hidden-files          t
+          treemacs-never-persist              nil
+          treemacs-is-never-other-window      nil
+          treemacs-goto-tag-strategy          'refetch-index)
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    ;; (pcase (cons (not (null (executable-find "git")))
+    ;;              (not (null (executable-find "python"))))
+    ;;   (`(t . t)
+    ;;    (treemacs-git-mode 'extended))
+    ;;   (`(t . _)
+    ;;    (treemacs-git-mode 'simple)))
+    )
+  :bind
+  (:map global-map
+        ([f6]         . treemacs-toggle)
+        ("M-0"        . treemacs-select-window)
+        ("C-c 1"      . treemacs-delete-other-windows)
+        ))
+
+(use-package treemacs-projectile
+  :defer t
+  :ensure t
+  :after (treemacs projectile)
+  :config
+  (setq treemacs-header-function #'treemacs-projectile-create-header))
 
 (use-package magit
   :ensure t
   :pin melpa-stable
   :init
   (setq magit-repository-directories
-        '(("~/Code/otb/" . 1) ("~/moi/" . 2) ("~/.emacs.d" . 0)))
+       '(("~/Code/hiring-hub/" . 1) ("~/Code/moi/" . 2) ("~/.emacs.d" . 0)))
   (setq magit-refs-local-branch-format "%4c %-25n %h %U%m\n")
   (setq magit-completing-read-function 'ivy-completing-read)
   :config
@@ -492,6 +632,15 @@
   :pin melpa-stable
   :config
   (setq evil-magit-state 'normal))
+
+(use-package magithub
+  :ensure t
+  :after magit
+  :init
+  (defalias 'ghub-request 'ghub--request)
+  (defvar ghub-extra-headers nil)
+  :config
+  (magithub-feature-autoinject t))
 
 (use-package git-timemachine
   :ensure t
@@ -653,11 +802,13 @@
    "rgr" '(projectile-rails-goto-routes :which-key "goto-routes")
    "rgs" '(projectile-rails-goto-seeds :which-key "goto-seed")
 
+   "ra" '(projectile-rails-find-locale :which-key "find-locale")
    "rb" '(projectile-rails-find-job :which-key "find job")
    "rc" '(projectile-rails-find-controller :which-key "find-controller")
    "rC" '(projectile-rails-find-current-controller :which-key "find-current-controller")
    "rk" '(projectile-rails-find-rake :which-key "find rake")
    "rl" '(projectile-rails-find-lib :which-key "find lib")
+   "ri" '(projectile-rails-find-initializer :which-key "find initializer")
    "rm" '(projectile-rails-find-model :which-key "find-model")
    "rM" '(projectile-rails-find-current-model :which-key "find-current-model")
    "rn" '(projectile-rails-find-migration :which-key "find migration")
@@ -669,6 +820,16 @@
    "rR" '(projectile-rails-server :which-key "server")
    "rv" '(projectile-rails-find-view :which-key "find-view")
    "rV" '(projectile-rails-find-current-view :which-key "find-current-view")
+
+   "ft" 'treemacs-toggle
+   "fT" 'treemacs
+   "fB" 'treemacs-bookmark
+   "f C-t" 'treemacs-find-file
+   "f M-t" 'treemacs-find-tag
+   "fp" 'treemacs-projectile-toggle
+   "fP" 'treemacs-projectile
+
+   "xx" '(eshell-here :which-key "eshell-here")
    ))
 
 ;; ==============================
@@ -742,6 +903,7 @@
 
 (use-package ruby-tools
   :ensure t
+  :diminish ruby-tools-mode
   :after ruby-mode)
 
 (use-package ruby-hash-syntax
@@ -782,6 +944,11 @@
   :config
   (rvm-use-default))
 
+(use-package ruby-refactor
+  :ensure t
+  :config
+  (add-hook 'ruby-mode-hook 'ruby-refactor-mode-launch))
+
 (use-package yaml-mode
   :ensure t
   :defer t)
@@ -791,7 +958,7 @@
   :diminish rspec-mode
   :after ruby-mode
   :config
-  (rspec-install-snippets) 
+  (rspec-install-snippets)
   (add-hook 'dired-mode-hook 'rspec-dired-mode))
 
 (use-package bundler
@@ -836,65 +1003,65 @@
 ;;   :config
 ;;   (skewer-setup))
 
-(use-package erlang
-  :ensure t
-  :defer t
-  :init
-  (setq erlang-indent-level 2)
-  :config
-  (use-package erlang-start))
+;; (use-package erlang
+;;   :ensure t
+;;   :defer t
+;;   :init
+;;   (setq erlang-indent-level 2)
+;;   :config
+;;   (use-package erlang-start))
 
-(use-package anaconda-mode
-  :ensure t
-  :defer t
-  :diminish anaconda-mode
-  :init
-  (setq python-shell-interpreter "/home/timmillar/anaconda2/bin/ipython"
-	python-shell-interpreter-args "--simple-prompt -i")
-  :config
-  (add-hook 'python-mode-hook 'anaconda-mode)
-  (add-hook 'python-mode-hook 'anaconda-eldoc-mode))
+;; (use-package anaconda-mode
+;;   :ensure t
+;;   :defer t
+;;   :diminish anaconda-mode
+;;   :init
+;;   (setq python-shell-interpreter "/home/timmillar/anaconda2/bin/ipython"
+;; 	python-shell-interpreter-args "--simple-prompt -i")
+;;   :config
+;;   (add-hook 'python-mode-hook 'anaconda-mode)
+;;   (add-hook 'python-mode-hook 'anaconda-eldoc-mode))
 
-(use-package virtualenvwrapper
-  :ensure t
-  :defer t
-  :pin melpa-stable
-  :init
-  (setq venv-location "~/.tensorflow/")
-  :config
-  (venv-initialize-interactive-shells)
-  (venv-initialize-eshell))
+;; (use-package virtualenvwrapper
+;;   :ensure t
+;;   :defer t
+;;   :pin melpa-stable
+;;   :init
+;;   (setq venv-location "~/.tensorflow/")
+;;   :config
+;;   (venv-initialize-interactive-shells)
+;;   (venv-initialize-eshell))
 
-(use-package ensime
-  :ensure t
-  :defer t
-  :pin melpa-stable)
+;; (use-package ensime
+;;   :ensure t
+;;   :defer t
+;;   :pin melpa-stable)
 
-(use-package haskell-mode
-  :ensure t
-  :defer t
-  :pin melpa-stable
-  :init
-  (defvar haskell-font-lock-symbols)
-  (setq haskell-font-lock-symbols t
-        haskell-process-type 'stack-ghci
-        haskell-process-path-ghci "stack"
-        haskell-compile-cabal-build-command "cd %s stack build --ghc-option=-ferror-spans")
-  :config
-  (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
-  (add-hook 'haskell-mode-hook '(lambda ()
-                                  (setq haskell-indentation-mode t))))
+;; (use-package haskell-mode
+;;   :ensure t
+;;   :defer t
+;;   :pin melpa-stable
+;;   :init
+;;   (defvar haskell-font-lock-symbols)
+;;   (setq haskell-font-lock-symbols t
+;;         haskell-process-type 'stack-ghci
+;;         haskell-process-path-ghci "stack"
+;;         haskell-compile-cabal-build-command "cd %s stack build --ghc-option=-ferror-spans")
+;;   :config
+;;   (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+;;   (add-hook 'haskell-mode-hook '(lambda ()
+;;                                   (setq haskell-indentation-mode t))))
 
-(use-package intero
-  :ensure t
-  :defer t
-  :pin melpa-stable
-  :config
-  (add-hook 'haskell-mode-hook 'intero-mode))
+;; (use-package intero
+;;   :ensure t
+;;   :defer t
+;;   :pin melpa-stable
+;;   :config
+;;   (add-hook 'haskell-mode-hook 'intero-mode))
 
-(use-package racket-mode
-  :ensure t
-  :defer t)
+;; (use-package racket-mode
+;;   :ensure t
+;;   :defer t)
 
 ;; ==============================
 ;; Tidy-up modeline
@@ -966,7 +1133,10 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))))
+    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default)))
+ '(package-selected-packages
+   (quote
+    (evil-surround evil-avy sicp treemacs-evil treemacs-projectile evil-collection ruby-refactor magithub yasnippet yaml-mode which-key web-mode use-package undohist try sbt-mode rvm ruby-tools ruby-hash-syntax rspec-mode robe rainbow-delimiters projectile-rails pretty-lambdada paradox org-bullets mo-git-blame markdown-mode ivy-hydra ibuffer-vc haskell-mode git-timemachine git-messenger general flycheck feature-mode faceup eyebrowse exec-path-from-shell evil-smartparens evil-org evil-nerd-commenter evil-magit evil-escape eshell-git-prompt dumb-jump docker dired-details darktooth-theme creamsody-theme counsel-projectile counsel-gtags company bundler anaconda-mode all-the-icons-ivy all-the-icons-dired ace-window))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -975,5 +1145,5 @@
  )
 
 ;; Possible cause of errors in init file
-(put 'dired-find-alternate-file 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
+(put 'dired-find-alternate-file 'disabled nil)
