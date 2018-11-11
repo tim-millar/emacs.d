@@ -73,8 +73,15 @@
 (use-package darktooth-theme
   :ensure t
   :config
-  (load-theme 'darktooth t)
-  (darktooth-modeline))
+  ;; (load-theme 'darktooth t)
+  ;; (darktooth-modeline)
+  )
+
+(use-package zerodark-theme
+  :ensure t
+  :config
+  (load-theme 'zerodark t)
+  (zerodark-setup-modeline-format))
 
 ;; load source code pro font
 ;; (set-frame-font "Source Code Pro 11")
@@ -342,7 +349,7 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
 ;; Custom packages
 ;; ==============================
 
-(use-package setup-utils)
+;; (use-package setup-utils)
 
 ;; ==============================
 ;; dired
@@ -843,8 +850,10 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
    "rP" '(projectile-rails-find-current-spec :which-key "find-current-spec")
    "rr" '(projectile-rails-console :which-key "console")
    "rR" '(projectile-rails-server :which-key "server")
+   "rs" '(projectile-rails-find-stylesheet :which-key "find-stylesheet")
    "rv" '(projectile-rails-find-view :which-key "find-view")
    "rV" '(projectile-rails-find-current-view :which-key "find-current-view")
+   "ry" '(projectile-rails-find-layout :which-key "find-layout")
 
    ;; "ft" 'treemacs-toggle
    ;; "fT" 'treemacs
@@ -932,6 +941,9 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   (add-hook 'ruby-mode-hook 'whitespace-cleanup)
   )
 
+(use-package coffee-mode
+  :ensure t)
+
 (use-package inf-ruby
   :ensure t
   :defer t
@@ -1018,6 +1030,13 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
   :init
   (setq markdown-command "multimarkdown"))
 
+;; (use-package nodejs-repl
+;;   :ensure t
+;;   :bind
+;;   (("SPC t r" . nodejs-repl-send-regio)
+;;    ("SPC t f" . nodejs-repl-load-file)
+;;    ("SPC t z" . nodejs-repl-switch-to-repl)))
+
 (with-eval-after-load 'python
   (defun python-shell-completion-native-try ()
     "Return non-nil if can trigger native completion."
@@ -1027,6 +1046,10 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
       (python-shell-completion-native-get-completions
        (get-buffer-process (current-buffer))
        nil "_"))))
+
+(use-package php-mode
+  :ensure t
+  :defer t)
 
 ;; (use-package js2-mode
 ;;   :ensure t
@@ -1184,7 +1207,7 @@ The eshell is renamed to match that directory to make multiple eshell windows ea
     ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default)))
  '(package-selected-packages
    (quote
-    (php-mode info-colors system-packages git-link racket-mode wgrep sicp evil-collection ruby-refactor magithub yasnippet yaml-mode which-key web-mode use-package undohist try sbt-mode rvm ruby-tools ruby-hash-syntax rspec-mode robe rainbow-delimiters projectile-rails pretty-lambdada paradox org-bullets mo-git-blame markdown-mode ivy-hydra ibuffer-vc haskell-mode git-timemachine git-messenger flycheck feature-mode faceup eyebrowse exec-path-from-shell eshell-git-prompt dumb-jump docker dired-details darktooth-theme creamsody-theme counsel-projectile counsel-gtags company bundler anaconda-mode all-the-icons-ivy all-the-icons-dired ace-window))))
+    (nodejs-repl coffee-mode :coffee-mode php-mode info-colors system-packages git-link racket-mode wgrep sicp evil-collection ruby-refactor magithub yasnippet yaml-mode which-key web-mode use-package undohist try sbt-mode rvm ruby-tools ruby-hash-syntax rspec-mode robe rainbow-delimiters projectile-rails pretty-lambdada paradox org-bullets mo-git-blame markdown-mode ivy-hydra ibuffer-vc haskell-mode git-timemachine git-messenger flycheck feature-mode faceup eyebrowse exec-path-from-shell eshell-git-prompt dumb-jump docker dired-details darktooth-theme creamsody-theme counsel-projectile counsel-gtags company bundler anaconda-mode all-the-icons-ivy all-the-icons-dired ace-window))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
